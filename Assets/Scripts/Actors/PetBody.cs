@@ -53,63 +53,124 @@ namespace OopsItAte.Actors
             Func<GridPosition, bool> canPlayerMoveTo,
             out List<GridPosition> growthCells,
             out GridPosition pushDirection,
-            out bool shouldPushPlayer)
+            out bool shouldPushPlayer,
+            out List<PushableBoxMove> boxMoves)
         {
             ClearBlockers();
+            PushableBox[] boxes = FindObjectsByType<PushableBox>();
+            SuspendBoxBlockers(boxes);
             growthCells = new List<GridPosition>();
+            boxMoves = new List<PushableBoxMove>();
             var candidates = new HashSet<GridPosition>();
-            GridPosition preferredPushDirection = default;
+            var preferredPushDirections = new Dictionary<GridPosition, GridPosition>();
             bool playerWillBeCovered = bodyCells.Contains(playerPosition);
             pushDirection = default;
+            shouldPushPlayer = false;
 
-            foreach (GridPosition cell in bodyCells)
+            try
             {
-                for (int offsetY = -1; offsetY <= 1; offsetY++)
+                foreach (GridPosition cell in bodyCells)
                 {
-                    for (int offsetX = -1; offsetX <= 1; offsetX++)
+                    for (int offsetY = -1; offsetY <= 1; offsetY++)
                     {
-                        if (offsetX == 0 && offsetY == 0)
+                        for (int offsetX = -1; offsetX <= 1; offsetX++)
                         {
-                            continue;
-                        }
+                            if (offsetX == 0 && offsetY == 0)
+                            {
+                                continue;
+                            }
 
-                        var offset = new GridPosition(offsetX, offsetY);
-                        GridPosition candidate = cell + offset;
-                        if (bodyCells.Contains(candidate)
-                            || candidates.Contains(candidate)
-                            || !CanExpandInto(cell, offset, candidate))
-                        {
-                            continue;
-                        }
+                            var offset = new GridPosition(offsetX, offsetY);
+                            GridPosition candidate = cell + offset;
+                            if (bodyCells.Contains(candidate)
+                                || candidates.Contains(candidate)
+                                || !CanExpandInto(cell, offset, candidate))
+                            {
+                                continue;
+                            }
 
-                        candidates.Add(candidate);
-                        growthCells.Add(candidate);
-                        if (candidate.Equals(playerPosition))
-                        {
-                            preferredPushDirection = GetPushDirection(cell, playerPosition);
-                            playerWillBeCovered = true;
+                            candidates.Add(candidate);
+                            growthCells.Add(candidate);
+                            preferredPushDirections[candidate] = GetPushDirection(cell, candidate);
+                            if (candidate.Equals(playerPosition))
+                            {
+                                playerWillBeCovered = true;
+                            }
                         }
                     }
                 }
+
+                var growthCellSet = new HashSet<GridPosition>(growthCells);
+                var occupiedPositions = new HashSet<GridPosition> { playerPosition };
+                for (int i = 0; i < boxes.Length; i++)
+                {
+                    if (boxes[i].IsInitialized)
+                    {
+                        occupiedPositions.Add(boxes[i].Position);
+                    }
+                }
+
+                var reservedTargets = new HashSet<GridPosition>();
+                if (playerWillBeCovered)
+                {
+                    preferredPushDirections.TryGetValue(playerPosition, out GridPosition preferredPlayerDirection);
+                    shouldPushPlayer = TryFindPushDirection(
+                        playerPosition,
+                        preferredPlayerDirection,
+                        bodyCells,
+                        growthCellSet,
+                        target => canPlayerMoveTo(target)
+                            && !occupiedPositions.Contains(target)
+                            && !reservedTargets.Contains(target),
+                        out pushDirection);
+
+                    if (!shouldPushPlayer)
+                    {
+                        growthCells.Clear();
+                        return false;
+                    }
+
+                    reservedTargets.Add(playerPosition + pushDirection);
+                }
+
+                for (int i = 0; i < boxes.Length; i++)
+                {
+                    PushableBox box = boxes[i];
+                    if (!box.IsInitialized
+                        || (!bodyCells.Contains(box.Position) && !growthCellSet.Contains(box.Position)))
+                    {
+                        continue;
+                    }
+
+                    preferredPushDirections.TryGetValue(box.Position, out GridPosition preferredBoxDirection);
+                    if (!TryFindPushDirection(
+                        box.Position,
+                        preferredBoxDirection,
+                        bodyCells,
+                        growthCellSet,
+                        target => box.CanMoveTo(target)
+                            && !occupiedPositions.Contains(target)
+                            && !reservedTargets.Contains(target),
+                        out GridPosition boxPushDirection))
+                    {
+                        growthCells.Clear();
+                        boxMoves.Clear();
+                        shouldPushPlayer = false;
+                        pushDirection = default;
+                        return false;
+                    }
+
+                    boxMoves.Add(new PushableBoxMove(box, boxPushDirection));
+                    reservedTargets.Add(box.Position + boxPushDirection);
+                }
+
+                return growthCells.Count > 0;
             }
-
-            var growthCellSet = new HashSet<GridPosition>(growthCells);
-            shouldPushPlayer = playerWillBeCovered
-                && TryFindPushDirection(
-                    playerPosition,
-                    preferredPushDirection,
-                    bodyCells,
-                    growthCellSet,
-                    canPlayerMoveTo,
-                    out pushDirection);
-
-            if (playerWillBeCovered && !shouldPushPlayer)
+            finally
             {
-                growthCells.Clear();
+                RestoreBoxBlockers(boxes);
+                AddBlockers();
             }
-
-            AddBlockers();
-            return growthCells.Count > 0;
         }
 
         private bool CanExpandInto(GridPosition sourceCell, GridPosition offset, GridPosition candidate)
@@ -235,11 +296,11 @@ namespace OopsItAte.Actors
         }
 
         private static bool TryFindPushDirection(
-            GridPosition playerPosition,
+            GridPosition currentPosition,
             GridPosition preferredDirection,
             HashSet<GridPosition> currentBodyCells,
             HashSet<GridPosition> growthCells,
-            Func<GridPosition, bool> canPlayerMoveTo,
+            Func<GridPosition, bool> canMoveTo,
             out GridPosition pushDirection)
         {
             GridPosition[] directions =
@@ -259,10 +320,10 @@ namespace OopsItAte.Actors
                     continue;
                 }
 
-                GridPosition target = playerPosition + direction;
+                GridPosition target = currentPosition + direction;
                 if (!currentBodyCells.Contains(target)
                     && !growthCells.Contains(target)
-                    && canPlayerMoveTo(target))
+                    && canMoveTo(target))
                 {
                     pushDirection = direction;
                     return true;
@@ -271,6 +332,22 @@ namespace OopsItAte.Actors
 
             pushDirection = default;
             return false;
+        }
+
+        private static void SuspendBoxBlockers(PushableBox[] boxes)
+        {
+            for (int i = 0; i < boxes.Length; i++)
+            {
+                boxes[i].SuspendBlocker();
+            }
+        }
+
+        private static void RestoreBoxBlockers(PushableBox[] boxes)
+        {
+            for (int i = 0; i < boxes.Length; i++)
+            {
+                boxes[i].RestoreBlocker();
+            }
         }
 
         private void Redraw()

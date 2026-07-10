@@ -17,6 +17,7 @@ Create these objects in the scene and move them onto grid positions:
 - `PlayerStart`: empty GameObject with `PlayerStart`.
 - `Kitchen`: Quad or empty GameObject with `KitchenStation`.
 - `Pet`: empty GameObject with `PetBody`.
+- `PushableBox`: optional 1x1 box with `PushableBox`. The player cannot walk through it, and pet growth pushes it to an available adjacent cell.
 - `WallBlocker`: one object per blocked cell with `GridWall`.
 - `DoorExit`: one exit cell with `DoorExit`.
 

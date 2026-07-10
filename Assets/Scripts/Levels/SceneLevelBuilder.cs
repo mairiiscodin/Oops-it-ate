@@ -17,6 +17,7 @@ namespace OopsItAte.Levels
         [SerializeField] private PlayerInteractor interactor;
         [SerializeField] private KitchenStation kitchen;
         [SerializeField] private PetBody pet;
+        [SerializeField] private PushableBox[] boxes;
         [SerializeField] private KeyboardGridInput input;
         [SerializeField] private LevelExitController exitController;
 
@@ -43,6 +44,7 @@ namespace OopsItAte.Levels
             playerStart = FindAnyObjectByType<PlayerStart>();
             kitchen = FindAnyObjectByType<KitchenStation>();
             pet = FindAnyObjectByType<PetBody>();
+            boxes = FindObjectsByType<PushableBox>();
 
             if (playerStart == null || kitchen == null || pet == null)
             {
@@ -54,6 +56,7 @@ namespace OopsItAte.Levels
             gridWorld = CreateGridWorld();
             SetupKitchen();
             SetupPet();
+            SetupBoxes();
             player = CreatePlayer();
             inventory = player.gameObject.AddComponent<PlayerInventory>();
             interactor = player.gameObject.AddComponent<PlayerInteractor>();
@@ -93,6 +96,15 @@ namespace OopsItAte.Levels
         {
             GridPosition position = settings.grid.WorldToGrid(pet.transform.position);
             pet.Initialize(gridWorld, position);
+        }
+
+        private void SetupBoxes()
+        {
+            for (int i = 0; i < boxes.Length; i++)
+            {
+                GridPosition position = settings.grid.WorldToGrid(boxes[i].transform.position);
+                boxes[i].Initialize(gridWorld, position);
+            }
         }
 
         private GridMover CreatePlayer()

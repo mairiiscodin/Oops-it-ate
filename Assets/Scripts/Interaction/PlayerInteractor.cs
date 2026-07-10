@@ -34,16 +34,23 @@ namespace OopsItAte.Interaction
                 List<GridPosition> growthCells;
                 GridPosition pushDirection;
                 bool shouldPushPlayer;
+                List<PushableBoxMove> boxMoves;
 
                 if (!pet.TryFindGrowthPlan(
                     playerPositionBeforeGrowth,
                     player.CanMoveTo,
                     out growthCells,
                     out pushDirection,
-                    out shouldPushPlayer))
+                    out shouldPushPlayer,
+                    out boxMoves))
                 {
                     pet.BurpAndShrink();
                     inventory.TryUseFood();
+                    return;
+                }
+
+                if (!TryApplyBoxMoves(boxMoves))
+                {
                     return;
                 }
 
@@ -56,6 +63,42 @@ namespace OopsItAte.Interaction
 
                     inventory.TryUseFood();
                 }
+                else
+                {
+                    RollbackBoxMoves(boxMoves);
+                }
+            }
+        }
+
+        private static bool TryApplyBoxMoves(IReadOnlyList<PushableBoxMove> boxMoves)
+        {
+            int movedCount = 0;
+            for (int i = 0; i < boxMoves.Count; i++)
+            {
+                if (boxMoves[i].Box.TryMove(boxMoves[i].Direction))
+                {
+                    movedCount++;
+                    continue;
+                }
+
+                RollbackBoxMoves(boxMoves, movedCount);
+                return false;
+            }
+
+            return true;
+        }
+
+        private static void RollbackBoxMoves(IReadOnlyList<PushableBoxMove> boxMoves)
+        {
+            RollbackBoxMoves(boxMoves, boxMoves.Count);
+        }
+
+        private static void RollbackBoxMoves(IReadOnlyList<PushableBoxMove> boxMoves, int movedCount)
+        {
+            for (int i = movedCount - 1; i >= 0; i--)
+            {
+                GridPosition direction = boxMoves[i].Direction;
+                boxMoves[i].Box.TryMove(new GridPosition(-direction.X, -direction.Y));
             }
         }
     }

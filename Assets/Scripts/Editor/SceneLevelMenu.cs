@@ -58,7 +58,22 @@ namespace OopsItAte.Editor
             Selection.activeGameObject = wall;
         }
 
-        [MenuItem("GameObject/Oops It Ate/Door Exit", false, 15)]
+        [MenuItem("GameObject/Oops It Ate/Pushable Box", false, 15)]
+        public static void CreatePushableBox()
+        {
+            GameObject box = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            box.name = "PushableBox";
+            Object.DestroyImmediate(box.GetComponent<Collider>());
+            box.AddComponent<PushableBox>();
+
+            var renderer = box.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color"));
+            renderer.sharedMaterial.color = new Color(0.62f, 0.36f, 0.16f);
+
+            Selection.activeGameObject = box;
+        }
+
+        [MenuItem("GameObject/Oops It Ate/Door Exit", false, 16)]
         public static void CreateDoorExit()
         {
             GameObject door = GameObject.CreatePrimitive(PrimitiveType.Quad);
