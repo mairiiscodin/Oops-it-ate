@@ -60,7 +60,7 @@ namespace OopsItAte.Levels
             player = CreatePlayer();
             inventory = player.gameObject.AddComponent<PlayerInventory>();
             interactor = player.gameObject.AddComponent<PlayerInteractor>();
-            interactor.Initialize(player, inventory, kitchen, pet);
+            interactor.Initialize(player, inventory, kitchen, pet, boxes);
             exitController = CreateExitController();
             input = CreateInput(player, interactor, exitController);
             SetupCamera();
@@ -81,6 +81,12 @@ namespace OopsItAte.Levels
             GridWall[] walls = FindObjectsByType<GridWall>();
             for (int i = 0; i < walls.Length; i++)
             {
+                var renderer = walls[i].GetComponent<MeshRenderer>();
+                if (renderer != null)
+                {
+                    renderer.enabled = false;
+                }
+
                 yield return settings.grid.WorldToGrid(walls[i].transform.position);
             }
         }
@@ -88,7 +94,7 @@ namespace OopsItAte.Levels
         private void SetupKitchen()
         {
             GridPosition position = settings.grid.WorldToGrid(kitchen.transform.position);
-            kitchen.Initialize(position);
+            kitchen.Initialize(gridWorld, position);
             kitchen.transform.position = settings.grid.GridToWorld(position) + Vector3.back * 0.25f;
         }
 
@@ -128,7 +134,7 @@ namespace OopsItAte.Levels
         private LevelExitController CreateExitController()
         {
             var controller = gameObject.AddComponent<LevelExitController>();
-            controller.Initialize(FindObjectsByType<DoorExit>(), settings.grid);
+            controller.Initialize(FindObjectsByType<DoorExit>(), gridWorld);
             return controller;
         }
 

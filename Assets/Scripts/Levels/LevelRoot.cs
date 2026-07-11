@@ -94,7 +94,7 @@ namespace OopsItAte.Levels
             Destroy(kitchenObject.GetComponent<Collider>());
 
             var station = kitchenObject.AddComponent<KitchenStation>();
-            station.Initialize(ToGridPosition(level.kitchenPosition));
+            station.Initialize(world, ToGridPosition(level.kitchenPosition));
             return station;
         }
 

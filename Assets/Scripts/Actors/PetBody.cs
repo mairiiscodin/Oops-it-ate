@@ -6,10 +6,23 @@ using UnityEngine;
 
 namespace OopsItAte.Actors
 {
+    public readonly struct PetBodyMove
+    {
+        public PetBodyMove(PetBody body, GridPosition direction)
+        {
+            Body = body;
+            Direction = direction;
+        }
+
+        public PetBody Body { get; }
+        public GridPosition Direction { get; }
+    }
+
     public sealed class PetBody : MonoBehaviour
     {
         [SerializeField] private Color color = new Color(0.25f, 0.9f, 0.35f);
         [SerializeField] private GridPosition origin;
+        [SerializeField] private string bodyName = "Pet";
 
         private readonly HashSet<GridPosition> bodyCells = new HashSet<GridPosition>();
         private readonly Dictionary<GridPosition, GameObject> visuals = new Dictionary<GridPosition, GameObject>();
@@ -20,8 +33,15 @@ namespace OopsItAte.Actors
 
         public void Initialize(GridWorld gridWorld, GridPosition startPosition)
         {
+            Initialize(gridWorld, startPosition, color, bodyName);
+        }
+
+        public void Initialize(GridWorld gridWorld, GridPosition startPosition, Color bodyColor, string displayName)
+        {
             world = gridWorld;
             origin = startPosition;
+            color = bodyColor;
+            bodyName = displayName;
             bodyCells.Clear();
             bodyCells.Add(origin);
             growthLayers.Clear();
@@ -48,19 +68,130 @@ namespace OopsItAte.Actors
             return bodyCells.Contains(position);
         }
 
+        public bool TouchesBoundary(bool verticalBoundary, int coordinate)
+        {
+            foreach (GridPosition cell in bodyCells)
+            {
+                if ((verticalBoundary ? cell.X : cell.Y) == coordinate)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool WouldOccupyAfterShift(GridPosition position, GridPosition direction)
+        {
+            foreach (GridPosition cell in bodyCells)
+            {
+                if ((cell + direction).Equals(position))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public bool TryShift(GridPosition direction)
+        {
+            ClearBlockers();
+            var shiftedCells = new HashSet<GridPosition>();
+            foreach (GridPosition cell in bodyCells)
+            {
+                GridPosition target = cell + direction;
+                if (world.IsBlocked(target))
+                {
+                    AddBlockers();
+                    return false;
+                }
+
+                shiftedCells.Add(target);
+            }
+
+            bodyCells.Clear();
+            foreach (GridPosition cell in shiftedCells)
+            {
+                bodyCells.Add(cell);
+            }
+
+            origin += direction;
+            for (int layerIndex = 0; layerIndex < growthLayers.Count; layerIndex++)
+            {
+                for (int cellIndex = 0; cellIndex < growthLayers[layerIndex].Count; cellIndex++)
+                {
+                    growthLayers[layerIndex][cellIndex] += direction;
+                }
+            }
+
+            foreach (GameObject visual in visuals.Values)
+            {
+                Destroy(visual);
+            }
+            visuals.Clear();
+            Redraw();
+            return true;
+        }
+
+        internal void SuspendBlockers() => ClearBlockers();
+        internal void RestoreBlockers() => AddBlockers();
+
+        private void AddOccupiedCells(HashSet<GridPosition> occupied)
+        {
+            foreach (GridPosition cell in bodyCells) occupied.Add(cell);
+        }
+
+        private bool TryGetOverlap(
+            HashSet<GridPosition> currentCells,
+            HashSet<GridPosition> newCells,
+            out GridPosition overlap)
+        {
+            foreach (GridPosition cell in bodyCells)
+            {
+                if (currentCells.Contains(cell) || newCells.Contains(cell))
+                {
+                    overlap = cell;
+                    return true;
+                }
+            }
+
+            overlap = default;
+            return false;
+        }
+
+        private bool CanShiftTo(GridPosition direction, HashSet<GridPosition> occupied)
+        {
+            foreach (GridPosition cell in bodyCells)
+            {
+                GridPosition target = cell + direction;
+                if (world.IsBlocked(target)
+                    || (occupied.Contains(target) && !bodyCells.Contains(target)))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
         public bool TryFindGrowthPlan(
             GridPosition playerPosition,
             Func<GridPosition, bool> canPlayerMoveTo,
             out List<GridPosition> growthCells,
             out GridPosition pushDirection,
             out bool shouldPushPlayer,
-            out List<PushableBoxMove> boxMoves)
+            out List<PushableBoxMove> boxMoves,
+            out List<PetBodyMove> bodyMoves)
         {
             ClearBlockers();
             PushableBox[] boxes = FindObjectsByType<PushableBox>();
+            PetBody[] bodies = FindObjectsByType<PetBody>();
             SuspendBoxBlockers(boxes);
+            SuspendOtherBodyBlockers(bodies, this);
             growthCells = new List<GridPosition>();
             boxMoves = new List<PushableBoxMove>();
+            bodyMoves = new List<PetBodyMove>();
             var candidates = new HashSet<GridPosition>();
             var preferredPushDirections = new Dictionary<GridPosition, GridPosition>();
             bool playerWillBeCovered = bodyCells.Contains(playerPosition);
@@ -104,10 +235,14 @@ namespace OopsItAte.Actors
                 var occupiedPositions = new HashSet<GridPosition> { playerPosition };
                 for (int i = 0; i < boxes.Length; i++)
                 {
-                    if (boxes[i].IsInitialized)
+                    if (boxes[i].IsPushable)
                     {
                         occupiedPositions.Add(boxes[i].Position);
                     }
+                }
+                for (int i = 0; i < bodies.Length; i++)
+                {
+                    if (bodies[i] != this) bodies[i].AddOccupiedCells(occupiedPositions);
                 }
 
                 var reservedTargets = new HashSet<GridPosition>();
@@ -126,17 +261,27 @@ namespace OopsItAte.Actors
 
                     if (!shouldPushPlayer)
                     {
-                        growthCells.Clear();
-                        return false;
-                    }
+                        if (bodyCells.Contains(playerPosition))
+                        {
+                            growthCells.Clear();
+                            return false;
+                        }
 
-                    reservedTargets.Add(playerPosition + pushDirection);
+                        growthCellSet.Remove(playerPosition);
+                        growthCells.Remove(playerPosition);
+                        RemoveGrowthBesidePlayer(playerPosition, growthCells, growthCellSet);
+                        pushDirection = default;
+                    }
+                    else
+                    {
+                        reservedTargets.Add(playerPosition + pushDirection);
+                    }
                 }
 
                 for (int i = 0; i < boxes.Length; i++)
                 {
                     PushableBox box = boxes[i];
-                    if (!box.IsInitialized
+                    if (!box.IsPushable
                         || (!bodyCells.Contains(box.Position) && !growthCellSet.Contains(box.Position)))
                     {
                         continue;
@@ -164,12 +309,91 @@ namespace OopsItAte.Actors
                     reservedTargets.Add(box.Position + boxPushDirection);
                 }
 
+                for (int i = 0; i < bodies.Length; i++)
+                {
+                    PetBody otherBody = bodies[i];
+                    if (otherBody == this
+                        || !otherBody.TryGetOverlap(bodyCells, growthCellSet, out GridPosition overlap))
+                    {
+                        continue;
+                    }
+
+                    preferredPushDirections.TryGetValue(overlap, out GridPosition preferredDirection);
+                    occupiedPositions.UnionWith(growthCellSet);
+                    occupiedPositions.UnionWith(reservedTargets);
+                    if (!TryFindBodyPushDirection(
+                        otherBody,
+                        preferredDirection,
+                        occupiedPositions,
+                        out GridPosition bodyPushDirection))
+                    {
+                        growthCells.Clear();
+                        boxMoves.Clear();
+                        bodyMoves.Clear();
+                        shouldPushPlayer = false;
+                        pushDirection = default;
+                        return false;
+                    }
+
+                    bodyMoves.Add(new PetBodyMove(otherBody, bodyPushDirection));
+                    foreach (GridPosition cell in otherBody.bodyCells)
+                    {
+                        reservedTargets.Add(cell + bodyPushDirection);
+                    }
+                }
+
                 return growthCells.Count > 0;
             }
             finally
             {
                 RestoreBoxBlockers(boxes);
+                RestoreOtherBodyBlockers(bodies, this);
                 AddBlockers();
+            }
+        }
+
+        private static bool TryFindBodyPushDirection(
+            PetBody body,
+            GridPosition preferredDirection,
+            HashSet<GridPosition> occupiedPositions,
+            out GridPosition pushDirection)
+        {
+            GridPosition[] directions =
+            {
+                preferredDirection,
+                new GridPosition(-1, 0),
+                new GridPosition(0, -1),
+                new GridPosition(1, 0),
+                new GridPosition(0, 1)
+            };
+
+            for (int i = 0; i < directions.Length; i++)
+            {
+                GridPosition direction = directions[i];
+                if (!direction.Equals(default) && body.CanShiftTo(direction, occupiedPositions))
+                {
+                    pushDirection = direction;
+                    return true;
+                }
+            }
+
+            pushDirection = default;
+            return false;
+        }
+
+        private static void SuspendOtherBodyBlockers(PetBody[] bodies, PetBody except)
+        {
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (bodies[i] != except) bodies[i].SuspendBlockers();
+            }
+        }
+
+        private static void RestoreOtherBodyBlockers(PetBody[] bodies, PetBody except)
+        {
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (bodies[i] != except) bodies[i].RestoreBlockers();
             }
         }
 
@@ -193,6 +417,26 @@ namespace OopsItAte.Actors
                 && !world.IsBlocked(verticalSide);
         }
 
+        private static void RemoveGrowthBesidePlayer(
+            GridPosition playerPosition,
+            List<GridPosition> growthCells,
+            HashSet<GridPosition> growthCellSet)
+        {
+            for (int i = growthCells.Count - 1; i >= 0; i--)
+            {
+                GridPosition cell = growthCells[i];
+                int distance = Mathf.Abs(cell.X - playerPosition.X)
+                    + Mathf.Abs(cell.Y - playerPosition.Y);
+                if (distance != 1)
+                {
+                    continue;
+                }
+
+                growthCells.RemoveAt(i);
+                growthCellSet.Remove(cell);
+            }
+        }
+
 
         public bool TryGrow(IReadOnlyList<GridPosition> growthCells)
         {
@@ -204,7 +448,7 @@ namespace OopsItAte.Actors
                 if (bodyCells.Contains(cell) || world.IsBlocked(cell))
                 {
                     AddBlockers();
-                    Debug.Log("Pet cannot grow here.");
+                    Debug.Log($"{bodyName} cannot grow here.");
                     return false;
                 }
             }
@@ -217,7 +461,7 @@ namespace OopsItAte.Actors
             growthLayers.Add(new List<GridPosition>(growthCells));
             Redraw();
             RestartBurpTimer();
-            Debug.Log($"Pet expanded into {growthCells.Count} cell(s).");
+            Debug.Log($"{bodyName} expanded into {growthCells.Count} cell(s).");
             return true;
         }
 
@@ -225,7 +469,7 @@ namespace OopsItAte.Actors
         {
             if (bodyCells.Count <= 1)
             {
-                Debug.Log("Pet burped, but it is already 1x1.");
+                Debug.Log($"{bodyName} burped, but it is already 1x1.");
                 return false;
             }
 
@@ -235,7 +479,7 @@ namespace OopsItAte.Actors
             growthLayers.Clear();
             StopBurpTimer();
             Redraw();
-            Debug.Log("Pet burped and shrank to 1x1.");
+            Debug.Log($"{bodyName} burped and shrank to 1x1.");
             return true;
         }
 
@@ -276,7 +520,7 @@ namespace OopsItAte.Actors
 
                 growthLayers.RemoveAt(growthLayers.Count - 1);
                 Redraw();
-                Debug.Log("Pet burped and lost one growth layer.");
+                Debug.Log($"{bodyName} burped and lost one growth layer.");
             }
 
             burpCoroutine = null;
@@ -382,7 +626,7 @@ namespace OopsItAte.Actors
                 }
 
                 GameObject visual = GameObject.CreatePrimitive(PrimitiveType.Quad);
-                visual.name = $"Pet Body {cell}";
+                visual.name = $"{bodyName} Body {cell}";
                 visual.transform.SetParent(transform);
                 visual.transform.position = world.Settings.GridToWorld(cell) + Vector3.back * 0.5f;
                 visual.transform.localScale = Vector3.one * world.Settings.cellSize * 0.88f;

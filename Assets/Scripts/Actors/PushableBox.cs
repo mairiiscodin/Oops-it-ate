@@ -19,6 +19,7 @@ namespace OopsItAte.Actors
     {
         [SerializeField] private Color color = new Color(0.62f, 0.36f, 0.16f);
         [SerializeField] private GridPosition position;
+        [SerializeField] private PetBody growableBody;
 
         private GridWorld world;
         private Material visualMaterial;
@@ -26,6 +27,8 @@ namespace OopsItAte.Actors
 
         public GridPosition Position => position;
         public bool IsInitialized => world != null;
+        public bool IsPushable => world != null && growableBody == null;
+        public PetBody GrowableBody => growableBody;
 
         public void Initialize(GridWorld gridWorld, GridPosition startPosition)
         {
@@ -55,6 +58,25 @@ namespace OopsItAte.Actors
             SnapToGrid();
             AddBlocker();
             return true;
+        }
+
+        public PetBody ConvertToGrowable()
+        {
+            if (growableBody != null)
+            {
+                return growableBody;
+            }
+
+            RemoveBlocker();
+            var renderer = GetComponent<MeshRenderer>();
+            if (renderer != null)
+            {
+                renderer.enabled = false;
+            }
+
+            growableBody = gameObject.AddComponent<PetBody>();
+            growableBody.Initialize(world, position, color, "Box");
+            return growableBody;
         }
 
         internal void SuspendBlocker()
@@ -103,7 +125,7 @@ namespace OopsItAte.Actors
 
         private void AddBlocker()
         {
-            if (world == null || isBlocking)
+            if (world == null || isBlocking || growableBody != null)
             {
                 return;
             }

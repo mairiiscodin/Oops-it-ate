@@ -1,3 +1,4 @@
+using OopsItAte.Actors;
 using OopsItAte.Grid;
 using UnityEngine;
 
@@ -7,13 +8,15 @@ namespace OopsItAte.Interaction
     {
         [SerializeField] private GridPosition position;
         [SerializeField] private Color color = new Color(1f, 0.65f, 0.1f);
+        [SerializeField] private PetBody growableBody;
 
         public GridPosition Position => position;
+        public PetBody GrowableBody => growableBody;
 
-        public void Initialize(GridPosition gridPosition)
+        public void Initialize(GridWorld world, GridPosition gridPosition)
         {
             position = gridPosition;
-            transform.localScale = Vector3.one * 0.72f;
+            transform.localScale = Vector3.one * world.Settings.cellSize * 0.72f;
 
             var renderer = GetComponent<MeshRenderer>();
             if (renderer == null)
@@ -28,6 +31,14 @@ namespace OopsItAte.Interaction
             {
                 gameObject.AddComponent<MeshFilter>().mesh = CreateQuadMesh();
             }
+
+            renderer.enabled = false;
+            growableBody = GetComponent<PetBody>();
+            if (growableBody == null)
+            {
+                growableBody = gameObject.AddComponent<PetBody>();
+            }
+            growableBody.Initialize(world, position, color, "Kitchen");
         }
 
         private static Mesh CreateQuadMesh()

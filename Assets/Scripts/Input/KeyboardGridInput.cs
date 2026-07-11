@@ -55,6 +55,13 @@ namespace OopsItAte.Input
                 {
                     exitController.CheckExit(mover.CurrentPosition);
                 }
+
+                return;
+            }
+
+            if (exitController != null)
+            {
+                exitController.CheckExit(mover.FacingPosition);
             }
         }
     }

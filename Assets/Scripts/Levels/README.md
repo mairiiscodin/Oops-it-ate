@@ -30,14 +30,25 @@ At Play time, `SceneLevelBuilder` snaps those objects to the grid and creates th
 3. In `Level_001`, create `GameObject > Oops It Ate > Door Exit`.
 4. Select the door and set `Target Scene Name` to `Level_002`.
 5. When the player steps onto the door, Unity loads `Level_002`.
+6. The door occupies one grid cell. The target scene must be included in `Build Profiles > Scene List`.
+7. A door can be placed one cell outside the loaded grid as part of its boundary. Walking toward it changes scene; expanding that boundary moves the door outward with the edge.
+8. Feeding a boundary door grows it only along the wall edge, never inward or outward. Every grown door cell changes scene, and the newest growth layer burps away after 3 seconds.
 
 Move with WASD or arrow keys.
 
 Interact with `J`:
 
-- Stand on the kitchen and press `J` to carry food.
-- Stand next to the pet and press `J` to feed it.
+- Movement keys also turn the player, even when the cell ahead is blocked.
+- Face the kitchen and press `J` to carry food.
+- While carrying food, face the pet, kitchen, or a pushable box and press `J` to feed and grow it.
+- Kitchen and fed boxes use the same grid-cell growth and burp/shrink rules as the pet. Kitchen blocks movement, so food is collected by facing it.
+- Every grown Kitchen cell can provide food, not only its original center cell.
+- Face the unloaded space just outside the grid and feed it to load one entire new row or column. Authored WallBlockers remain fixed and only become active when their grid cells are loaded.
+- Expanded grid edges burp after 3 seconds. Before removing the newest row or column, the edge pushes the player, boxes, pets, kitchens, and grown boxes one cell inward. If an object cannot be pushed, shrinking waits at that layer; attached doors move back with the edge.
 - Each successful feeding fills every empty cell next to the pet. Diagonal cells are filled only when both orthogonal cells forming the corner are also empty.
 - If an expanding cell reaches the player, the player is pushed to an available adjacent cell.
+- Growth pushes both normal boxes and the complete multi-cell body of boxes that have already been fed; failed moves are rolled back before growth continues.
+- If the player cannot be pushed away, growth still fills every valid edge cell except the cell occupied by the player.
+- When the player cannot be pushed, growth leaves the player's cell and its corner-adjacent edge cells empty.
 - Every 3 seconds, a pet larger than `1x1` burps and loses its latest growth layer (for example, `5x5` becomes `3x3`).
 - If the pet cannot grow, it burps and shrinks straight back to `1x1`.
