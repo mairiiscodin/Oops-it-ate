@@ -3,6 +3,8 @@ using System.Collections.Generic;
 using System.Collections;
 using OopsItAte.Grid;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Serialization;
 
 namespace OopsItAte.Actors
 {
@@ -23,6 +25,9 @@ namespace OopsItAte.Actors
         [SerializeField] private Color color = new Color(0.25f, 0.9f, 0.35f);
         [SerializeField] private GridPosition origin;
         [SerializeField] private string bodyName = "Pet";
+        [Tooltip("Visual shown while this body occupies exactly one cell (for example DogVisual or OvenVisual).")]
+        [FormerlySerializedAs("normalDogVisual")]
+        [SerializeField] private GameObject normalVisual;
 
         private readonly HashSet<GridPosition> bodyCells = new HashSet<GridPosition>();
         private readonly Dictionary<GridPosition, GameObject> visuals = new Dictionary<GridPosition, GameObject>();
@@ -42,6 +47,7 @@ namespace OopsItAte.Actors
             origin = startPosition;
             color = bodyColor;
             bodyName = displayName;
+            FindNormalVisual();
             bodyCells.Clear();
             bodyCells.Add(origin);
             growthLayers.Clear();
@@ -596,6 +602,25 @@ namespace OopsItAte.Actors
 
         private void Redraw()
         {
+            bool showNormalVisual = normalVisual != null && bodyCells.Count == 1;
+            if (normalVisual != null)
+            {
+                normalVisual.SetActive(showNormalVisual);
+            }
+
+            // At 1x1 the authored sprite/animation replaces the generated square completely.
+            if (showNormalVisual)
+            {
+                foreach (GameObject visual in visuals.Values)
+                {
+                    Destroy(visual);
+                }
+
+                visuals.Clear();
+                AddBlockers();
+                return;
+            }
+
             var removedCells = new List<GridPosition>();
             foreach (GridPosition cell in visuals.Keys)
             {
@@ -636,6 +661,64 @@ namespace OopsItAte.Actors
             }
 
             AddBlockers();
+        }
+
+        private void FindNormalVisual()
+        {
+            if (normalVisual != null)
+            {
+                ConfigureNormalVisualSorting();
+                return;
+            }
+
+            string preferredName = string.Equals(bodyName, "Kitchen", StringComparison.OrdinalIgnoreCase)
+                ? "OvenVisual"
+                : "DogVisual";
+            Transform authoredVisual = transform.Find(preferredName);
+            if (authoredVisual != null)
+            {
+                normalVisual = authoredVisual.gameObject;
+            }
+
+            if (normalVisual == null)
+            {
+                Animator authoredAnimator = GetComponentInChildren<Animator>(true);
+                if (authoredAnimator != null && authoredAnimator.gameObject != gameObject)
+                {
+                    normalVisual = authoredAnimator.gameObject;
+                }
+            }
+
+            if (normalVisual == null)
+            {
+                SpriteRenderer authoredRenderer = GetComponentInChildren<SpriteRenderer>(true);
+                if (authoredRenderer != null && authoredRenderer.gameObject != gameObject)
+                {
+                    normalVisual = authoredRenderer.gameObject;
+                }
+            }
+
+            ConfigureNormalVisualSorting();
+        }
+
+        private void ConfigureNormalVisualSorting()
+        {
+            if (normalVisual == null)
+            {
+                return;
+            }
+
+            SortingGroup sortingGroup = normalVisual.GetComponent<SortingGroup>();
+            if (sortingGroup != null)
+            {
+                sortingGroup.sortingOrder = 10;
+            }
+
+            SpriteRenderer[] renderers = normalVisual.GetComponentsInChildren<SpriteRenderer>(true);
+            for (int i = 0; i < renderers.Length; i++)
+            {
+                renderers[i].sortingOrder = 10;
+            }
         }
 
         private void ClearBlockers()

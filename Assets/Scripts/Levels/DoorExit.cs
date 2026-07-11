@@ -14,6 +14,20 @@ namespace OopsItAte.Levels
         public string TargetSceneName => targetSceneName;
         public GridPosition Position => position;
 
+        public bool TryGetInteriorPosition(out GridPosition interiorPosition)
+        {
+            if (!boundaryDirection.Equals(default))
+            {
+                interiorPosition = new GridPosition(
+                    position.X - boundaryDirection.X,
+                    position.Y - boundaryDirection.Y);
+                return true;
+            }
+
+            interiorPosition = default;
+            return false;
+        }
+
         private GridSettings grid;
         private GridWorld world;
         private GridPosition boundaryDirection;

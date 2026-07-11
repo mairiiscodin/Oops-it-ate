@@ -12,6 +12,8 @@ namespace OopsItAte.Levels
         [SerializeField] private LevelSceneSettings settings;
         [SerializeField] private GridWorld gridWorld;
         [SerializeField] private PlayerStart playerStart;
+        [Tooltip("Prefab spawned at PlayerStart. The blue Quad is used when this is not assigned.")]
+        [SerializeField] private GameObject playerPrefab;
         [SerializeField] private GridMover player;
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private PlayerInteractor interactor;
@@ -57,11 +59,28 @@ namespace OopsItAte.Levels
             SetupKitchen();
             SetupPet();
             SetupBoxes();
-            player = CreatePlayer();
-            inventory = player.gameObject.AddComponent<PlayerInventory>();
-            interactor = player.gameObject.AddComponent<PlayerInteractor>();
-            interactor.Initialize(player, inventory, kitchen, pet, boxes);
             exitController = CreateExitController();
+
+            GridPosition playerSpawnPosition = settings.grid.WorldToGrid(playerStart.transform.position);
+            if (exitController.TryConsumeArrivalPosition(out GridPosition doorArrivalPosition))
+            {
+                playerSpawnPosition = doorArrivalPosition;
+            }
+
+            player = CreatePlayer(playerSpawnPosition);
+            inventory = player.GetComponent<PlayerInventory>();
+            if (inventory == null)
+            {
+                inventory = player.gameObject.AddComponent<PlayerInventory>();
+            }
+
+            interactor = player.GetComponent<PlayerInteractor>();
+            if (interactor == null)
+            {
+                interactor = player.gameObject.AddComponent<PlayerInteractor>();
+            }
+
+            interactor.Initialize(player, inventory, kitchen, pet, boxes);
             input = CreateInput(player, interactor, exitController);
             SetupCamera();
         }
@@ -113,10 +132,27 @@ namespace OopsItAte.Levels
             }
         }
 
-        private GridMover CreatePlayer()
+        private GridMover CreatePlayer(GridPosition spawnPosition)
+        {
+            GameObject playerObject = playerPrefab != null
+                ? Instantiate(playerPrefab, transform)
+                : CreateFallbackPlayer();
+
+            playerObject.name = "Player";
+
+            GridMover mover = playerObject.GetComponent<GridMover>();
+            if (mover == null)
+            {
+                mover = playerObject.AddComponent<GridMover>();
+            }
+
+            mover.Initialize(gridWorld, spawnPosition);
+            return mover;
+        }
+
+        private GameObject CreateFallbackPlayer()
         {
             GameObject playerObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            playerObject.name = "Player";
             playerObject.transform.SetParent(transform);
             playerObject.transform.localScale = Vector3.one * settings.grid.cellSize * 0.72f;
 
@@ -125,10 +161,7 @@ namespace OopsItAte.Levels
             renderer.material.color = new Color(0.1f, 0.55f, 1f);
 
             Destroy(playerObject.GetComponent<Collider>());
-
-            var mover = playerObject.AddComponent<GridMover>();
-            mover.Initialize(gridWorld, settings.grid.WorldToGrid(playerStart.transform.position));
-            return mover;
+            return playerObject;
         }
 
         private LevelExitController CreateExitController()
