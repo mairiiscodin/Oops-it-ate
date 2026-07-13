@@ -14,6 +14,7 @@ namespace OopsItAte.Grid
 
         private readonly HashSet<GridPosition> blockedCells = new HashSet<GridPosition>();
         private readonly HashSet<GridPosition> authoredWalls = new HashSet<GridPosition>();
+        private readonly HashSet<GridPosition> loadedCells = new HashSet<GridPosition>();
         private readonly HashSet<GridPosition> dynamicBlockedCells = new HashSet<GridPosition>();
         private readonly Dictionary<GridPosition, MeshRenderer> cellRenderers = new Dictionary<GridPosition, MeshRenderer>();
         private int minX;
@@ -39,25 +40,29 @@ namespace OopsItAte.Grid
         public GridSettings Settings => settings;
         public event Action<GridPosition, GridPosition> BoundaryExpanded;
 
-        public void Initialize(GridSettings gridSettings, IEnumerable<GridPosition> levelWalls)
+        public void Initialize(
+            GridSettings gridSettings,
+            IEnumerable<GridPosition> levelWalls,
+            IEnumerable<GridPosition> levelCells = null)
         {
             settings = gridSettings;
             minX = 0;
             maxX = settings.width - 1;
             minY = 0;
             maxY = settings.height - 1;
+            BuildLoadedCells(levelCells);
             BuildWalls(levelWalls);
             DrawGrid();
         }
 
         public bool CanEnter(GridPosition position)
         {
-            return IsInsideCurrentBounds(position) && !blockedCells.Contains(position) && !dynamicBlockedCells.Contains(position);
+            return loadedCells.Contains(position) && !blockedCells.Contains(position) && !dynamicBlockedCells.Contains(position);
         }
 
         public bool IsBlocked(GridPosition position)
         {
-            return !IsInsideCurrentBounds(position) || blockedCells.Contains(position) || dynamicBlockedCells.Contains(position);
+            return !loadedCells.Contains(position) || blockedCells.Contains(position) || dynamicBlockedCells.Contains(position);
         }
 
         public bool TryExpandBoundary(GridPosition unloadedPosition, GridPosition outwardDirection)
@@ -166,6 +171,32 @@ namespace OopsItAte.Grid
             }
         }
 
+        private void BuildLoadedCells(IEnumerable<GridPosition> levelCells)
+        {
+            loadedCells.Clear();
+
+            if (levelCells != null)
+            {
+                foreach (GridPosition cell in levelCells)
+                {
+                    if (IsInsideCurrentBounds(cell))
+                    {
+                        loadedCells.Add(cell);
+                    }
+                }
+
+                return;
+            }
+
+            for (int y = minY; y <= maxY; y++)
+            {
+                for (int x = minX; x <= maxX; x++)
+                {
+                    loadedCells.Add(new GridPosition(x, y));
+                }
+            }
+        }
+
         private void DrawGrid()
         {
             for (int y = minY; y <= maxY; y++)
@@ -173,6 +204,11 @@ namespace OopsItAte.Grid
                 for (int x = minX; x <= maxX; x++)
                 {
                     var position = new GridPosition(x, y);
+                    if (!loadedCells.Contains(position))
+                    {
+                        continue;
+                    }
+
                     bool isWall = blockedCells.Contains(position);
                     CreateCell(position, isWall ? wallColor : floorColor, isWall ? "Wall" : "Floor");
                 }
@@ -215,6 +251,7 @@ namespace OopsItAte.Grid
 
         private void SetCell(GridPosition position, bool isWall)
         {
+            loadedCells.Add(position);
             if (isWall)
             {
                 blockedCells.Add(position);
@@ -236,6 +273,7 @@ namespace OopsItAte.Grid
 
         private void RemoveCell(GridPosition position)
         {
+            loadedCells.Remove(position);
             blockedCells.Remove(position);
             if (!cellRenderers.TryGetValue(position, out MeshRenderer renderer))
             {

@@ -91,7 +91,20 @@ namespace OopsItAte.Levels
             gridObject.transform.SetParent(transform);
 
             var world = gridObject.AddComponent<GridWorld>();
-            world.Initialize(settings.grid, GetWallPositions());
+            if (settings.TryReadTileMap(out HashSet<GridPosition> mapCells, out HashSet<GridPosition> tileWalls))
+            {
+                foreach (GridPosition wall in GetWallPositions())
+                {
+                    tileWalls.Add(wall);
+                }
+
+                world.Initialize(settings.grid, tileWalls, mapCells);
+            }
+            else
+            {
+                world.Initialize(settings.grid, GetWallPositions());
+            }
+
             return world;
         }
 
@@ -217,16 +230,27 @@ namespace OopsItAte.Levels
         {
             GridSettings grid = sceneSettings.grid;
             Vector3 cellSize = Vector3.one * grid.cellSize;
+            bool hasTileMap = sceneSettings.TryReadTileMap(
+                out HashSet<GridPosition> mapCells,
+                out HashSet<GridPosition> wallCells);
 
             for (int y = 0; y < grid.height; y++)
             {
                 for (int x = 0; x < grid.width; x++)
                 {
-                    Vector3 center = grid.GridToWorld(new GridPosition(x, y)) + Vector3.forward * 0.05f;
+                    var position = new GridPosition(x, y);
+                    if (hasTileMap && !mapCells.Contains(position))
+                    {
+                        continue;
+                    }
+
+                    Vector3 center = grid.GridToWorld(position) + Vector3.forward * 0.05f;
                     bool checker = (x + y) % 2 == 0;
-                    Gizmos.color = checker
-                        ? new Color(0.18f, 0.22f, 0.25f, 0.24f)
-                        : new Color(0.23f, 0.27f, 0.3f, 0.24f);
+                    Gizmos.color = hasTileMap && wallCells.Contains(position)
+                        ? new Color(0.45f, 0.45f, 0.45f, 0.55f)
+                        : checker
+                            ? new Color(0.18f, 0.22f, 0.25f, 0.24f)
+                            : new Color(0.23f, 0.27f, 0.3f, 0.24f);
                     Gizmos.DrawCube(center, cellSize * 0.92f);
 
                     Gizmos.color = new Color(0.9f, 0.95f, 1f, 0.28f);
@@ -234,13 +258,16 @@ namespace OopsItAte.Levels
                 }
             }
 
-            Vector3 min = grid.GridToWorld(new GridPosition(0, 0));
-            Vector3 max = grid.GridToWorld(new GridPosition(grid.width - 1, grid.height - 1));
-            Vector3 boundsCenter = (min + max) * 0.5f + Vector3.forward * 0.05f;
-            Vector3 boundsSize = new Vector3(grid.width * grid.cellSize, grid.height * grid.cellSize, grid.cellSize * 0.1f);
+            if (!hasTileMap)
+            {
+                Vector3 min = grid.GridToWorld(new GridPosition(0, 0));
+                Vector3 max = grid.GridToWorld(new GridPosition(grid.width - 1, grid.height - 1));
+                Vector3 boundsCenter = (min + max) * 0.5f + Vector3.forward * 0.05f;
+                Vector3 boundsSize = new Vector3(grid.width * grid.cellSize, grid.height * grid.cellSize, grid.cellSize * 0.1f);
 
-            Gizmos.color = new Color(1f, 1f, 1f, 0.85f);
-            Gizmos.DrawWireCube(boundsCenter, boundsSize);
+                Gizmos.color = new Color(1f, 1f, 1f, 0.85f);
+                Gizmos.DrawWireCube(boundsCenter, boundsSize);
+            }
         }
     }
 }

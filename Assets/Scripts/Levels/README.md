@@ -10,6 +10,26 @@ Current slice: scene-based level setup with grid movement, kitchen, carried food
 4. Add `SceneLevelBuilder`.
 5. Set grid width, height, and cell size on `LevelSceneSettings`.
 
+## Make a non-rectangular tile map
+
+On `LevelSceneSettings`, fill in `Tile Map` using:
+
+- `.` for a walkable floor tile.
+- `#` for a wall tile.
+- A space or `_` for empty space outside the map.
+
+The first text line is the top row. The grid width and height are read from the text map automatically at Play time and in the Scene gizmo preview. For example, this creates an L-shaped room:
+
+```text
+###____
+#..____
+#..####
+#.....#
+#######
+```
+
+Leave `Tile Map` empty to keep the original full rectangular grid. `PlayerStart`, `Kitchen`, `Pet`, boxes, and doors are still placed as scene objects on top of the visible tile cells.
+
 ## Place objects
 
 Create these objects in the scene and move them onto grid positions:

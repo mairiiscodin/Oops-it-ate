@@ -31,6 +31,7 @@ namespace OopsItAte.Editor
             }
 
             var walls = new System.Collections.Generic.List<Vector2Int>();
+            var cells = new System.Collections.Generic.List<Vector2Int>();
 
             for (int row = 0; row < rawRows.Length; row++)
             {
@@ -44,9 +45,15 @@ namespace OopsItAte.Editor
 
                     if (tile == '#')
                     {
+                        cells.Add(position);
                         walls.Add(position);
                     }
-                    else if (tile == 'S')
+                    else if (tile == '.' || tile == 'S' || tile == 'K' || tile == 'P')
+                    {
+                        cells.Add(position);
+                    }
+
+                    if (tile == 'S')
                     {
                         level.playerStart = position;
                     }
@@ -64,6 +71,7 @@ namespace OopsItAte.Editor
             level.grid.width = width;
             level.grid.height = height;
             level.wallCells = walls.ToArray();
+            level.mapCells = cells.ToArray();
             EditorUtility.SetDirty(level);
         }
     }
