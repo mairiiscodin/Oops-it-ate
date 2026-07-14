@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: f4960a1f34501b24593b1e23be220df3
+guid: 25ba0456f1726944eba2d286ba6cc53d
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,19 +127,19 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: Dog
+  - name: ChefBack
     originalName: 
-    pivot: {x: 0.5, y: 0.5}
-    alignment: 0
+    pivot: {x: 0.5, y: 0}
+    alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
     rect:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 27
-      height: 23
-    spriteID: c5fc3efa8e3847d428384f18b7908e9c
+      width: 26
+      height: 38
+    spriteID: 8f76ca6aa924c2748b66d0a6c377d69a
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 1502599448
+      value0: 4238025959
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: Dog
+    name: ChefBack
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: Dog
+    - name: ChefBack
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 4
+        x: 3
         y: 0
-        width: 27
-        height: 23
-      spriteId: c5fc3efa8e3847d428384f18b7908e9c
+        width: 26
+        height: 38
+      spriteId: 8f76ca6aa924c2748b66d0a6c377d69a
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 32, y: 32}
-  previousTextureSize: {x: 64, y: 32}
+  canvasSize: {x: 32, y: 38}
+  previousTextureSize: {x: 64, y: 64}

@@ -22,6 +22,8 @@ namespace OopsItAte.Actors
 
     public sealed class PetBody : MonoBehaviour
     {
+        private const int ActorSortingOrderBase = 1000;
+
         [SerializeField] private Color color = new Color(0.25f, 0.9f, 0.35f);
         [SerializeField] private GridPosition origin;
         [SerializeField] private string bodyName = "Pet";
@@ -606,6 +608,7 @@ namespace OopsItAte.Actors
             if (normalVisual != null)
             {
                 normalVisual.SetActive(showNormalVisual);
+                ConfigureNormalVisualSorting();
             }
 
             // At 1x1 the authored sprite/animation replaces the generated square completely.
@@ -708,16 +711,20 @@ namespace OopsItAte.Actors
                 return;
             }
 
+            float worldY = world != null
+                ? world.Settings.GridToWorld(origin).y
+                : transform.position.y;
+            int sortingOrder = ActorSortingOrderBase + Mathf.RoundToInt(-worldY * 100f);
             SortingGroup sortingGroup = normalVisual.GetComponent<SortingGroup>();
             if (sortingGroup != null)
             {
-                sortingGroup.sortingOrder = 10;
+                sortingGroup.sortingOrder = sortingOrder;
             }
 
             SpriteRenderer[] renderers = normalVisual.GetComponentsInChildren<SpriteRenderer>(true);
             for (int i = 0; i < renderers.Length; i++)
             {
-                renderers[i].sortingOrder = 10;
+                renderers[i].sortingOrder = sortingGroup == null ? sortingOrder : 0;
             }
         }
 

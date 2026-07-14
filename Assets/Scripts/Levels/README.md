@@ -65,6 +65,7 @@ Interact with `J`:
 - Every grown Kitchen cell can provide food, not only its original center cell.
 - Face the unloaded space just outside the grid and feed it to load one entire new row or column. Authored WallBlockers remain fixed and only become active when their grid cells are loaded.
 - Expanded grid edges burp after 3 seconds. Before removing the newest row or column, the edge pushes the player, boxes, pets, kitchens, and grown boxes one cell inward. If an object cannot be pushed, shrinking waits at that layer; attached doors move back with the edge.
+- Shaped tile maps can also expand at a concave edge. The player's facing selects the wall side, and the faced cell defines a plane across the map. Empty boundary cells of that side from the plane outward move exactly one cell; cells behind the player's face are unchanged. Burping removes the added layer and restores the authored shape.
 - Each successful feeding fills every empty cell next to the pet. Diagonal cells are filled only when both orthogonal cells forming the corner are also empty.
 - If an expanding cell reaches the player, the player is pushed to an available adjacent cell.
 - Growth pushes both normal boxes and the complete multi-cell body of boxes that have already been fed; failed moves are rolled back before growth continues.

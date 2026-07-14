@@ -10,6 +10,7 @@ namespace OopsItAte.Input
         [SerializeField] private GridMover mover;
         [SerializeField] private PlayerInteractor interactor;
         [SerializeField] private LevelExitController exitController;
+        private GridPosition? queuedDirection;
 
         public void Initialize(GridMover gridMover, PlayerInteractor playerInteractor, LevelExitController levelExitController)
         {
@@ -25,26 +26,59 @@ namespace OopsItAte.Input
 
         private void Update()
         {
-            if (UnityEngine.Input.GetKeyDown(KeyCode.UpArrow) || UnityEngine.Input.GetKeyDown(KeyCode.W))
+            GridPosition? pressedDirection = ReadMovementDirection();
+
+            if (mover.IsMoving)
             {
-                TryMove(new GridPosition(0, 1));
+                if (pressedDirection.HasValue)
+                {
+                    queuedDirection = pressedDirection;
+                }
+
+                return;
             }
-            else if (UnityEngine.Input.GetKeyDown(KeyCode.DownArrow) || UnityEngine.Input.GetKeyDown(KeyCode.S))
+
+            if (queuedDirection.HasValue)
             {
-                TryMove(new GridPosition(0, -1));
+                GridPosition direction = queuedDirection.Value;
+                queuedDirection = null;
+                TryMove(direction);
+                return;
             }
-            else if (UnityEngine.Input.GetKeyDown(KeyCode.LeftArrow) || UnityEngine.Input.GetKeyDown(KeyCode.A))
+
+            if (pressedDirection.HasValue)
             {
-                TryMove(new GridPosition(-1, 0));
-            }
-            else if (UnityEngine.Input.GetKeyDown(KeyCode.RightArrow) || UnityEngine.Input.GetKeyDown(KeyCode.D))
-            {
-                TryMove(new GridPosition(1, 0));
+                TryMove(pressedDirection.Value);
             }
             else if (UnityEngine.Input.GetKeyDown(KeyCode.J))
             {
                 interactor.TryInteract();
             }
+        }
+
+        private static GridPosition? ReadMovementDirection()
+        {
+            if (UnityEngine.Input.GetKeyDown(KeyCode.UpArrow) || UnityEngine.Input.GetKeyDown(KeyCode.W))
+            {
+                return new GridPosition(0, 1);
+            }
+
+            if (UnityEngine.Input.GetKeyDown(KeyCode.DownArrow) || UnityEngine.Input.GetKeyDown(KeyCode.S))
+            {
+                return new GridPosition(0, -1);
+            }
+
+            if (UnityEngine.Input.GetKeyDown(KeyCode.LeftArrow) || UnityEngine.Input.GetKeyDown(KeyCode.A))
+            {
+                return new GridPosition(-1, 0);
+            }
+
+            if (UnityEngine.Input.GetKeyDown(KeyCode.RightArrow) || UnityEngine.Input.GetKeyDown(KeyCode.D))
+            {
+                return new GridPosition(1, 0);
+            }
+
+            return null;
         }
 
         private void TryMove(GridPosition direction)

@@ -25,16 +25,24 @@ namespace OopsItAte.Grid
         private readonly List<BoundaryGrowthLayer> boundaryGrowthLayers = new List<BoundaryGrowthLayer>();
         private Coroutine burpCoroutine;
 
-        private readonly struct BoundaryGrowthLayer
+        private sealed class BoundaryGrowthLayer
         {
-            public BoundaryGrowthLayer(GridPosition direction, int coordinate)
+            public BoundaryGrowthLayer(
+                GridPosition direction,
+                int coordinate,
+                List<GridPosition> addedCells,
+                bool changedBounds)
             {
                 Direction = direction;
                 Coordinate = coordinate;
+                AddedCells = addedCells;
+                ChangedBounds = changedBounds;
             }
 
             public GridPosition Direction { get; }
             public int Coordinate { get; }
+            public List<GridPosition> AddedCells { get; }
+            public bool ChangedBounds { get; }
         }
 
         public GridSettings Settings => settings;
@@ -67,45 +75,69 @@ namespace OopsItAte.Grid
 
         public bool TryExpandBoundary(GridPosition unloadedPosition, GridPosition outwardDirection)
         {
+            if (!IsCardinalDirection(outwardDirection)
+                || loadedCells.Contains(unloadedPosition)
+                || !loadedCells.Contains(unloadedPosition + new GridPosition(
+                    -outwardDirection.X,
+                    -outwardDirection.Y)))
+            {
+                return false;
+            }
+
+            List<GridPosition> addedCells;
+            bool changedBounds = true;
             if (outwardDirection.Equals(new GridPosition(-1, 0))
                 && unloadedPosition.X == minX - 1
                 && unloadedPosition.Y >= minY && unloadedPosition.Y <= maxY)
             {
                 minX--;
-                LoadVerticalEdge(minX);
+                addedCells = LoadVerticalEdge(minX);
             }
             else if (outwardDirection.Equals(new GridPosition(1, 0))
                 && unloadedPosition.X == maxX + 1
                 && unloadedPosition.Y >= minY && unloadedPosition.Y <= maxY)
             {
                 maxX++;
-                LoadVerticalEdge(maxX);
+                addedCells = LoadVerticalEdge(maxX);
             }
             else if (outwardDirection.Equals(new GridPosition(0, -1))
                 && unloadedPosition.Y == minY - 1
                 && unloadedPosition.X >= minX && unloadedPosition.X <= maxX)
             {
                 minY--;
-                LoadHorizontalEdge(minY);
+                addedCells = LoadHorizontalEdge(minY);
             }
             else if (outwardDirection.Equals(new GridPosition(0, 1))
                 && unloadedPosition.Y == maxY + 1
                 && unloadedPosition.X >= minX && unloadedPosition.X <= maxX)
             {
                 maxY++;
-                LoadHorizontalEdge(maxY);
+                addedCells = LoadHorizontalEdge(maxY);
             }
             else
             {
-                return false;
+                changedBounds = false;
+                addedCells = LoadFacingBoundaryLayer(unloadedPosition, outwardDirection);
+                if (addedCells.Count == 0)
+                {
+                    return false;
+                }
             }
 
             RefreshCamera();
-            BoundaryExpanded?.Invoke(outwardDirection, unloadedPosition);
+            if (changedBounds)
+            {
+                BoundaryExpanded?.Invoke(outwardDirection, unloadedPosition);
+            }
+
             int coordinate = outwardDirection.X != 0 ? unloadedPosition.X : unloadedPosition.Y;
-            boundaryGrowthLayers.Add(new BoundaryGrowthLayer(outwardDirection, coordinate));
+            boundaryGrowthLayers.Add(new BoundaryGrowthLayer(
+                outwardDirection,
+                coordinate,
+                addedCells,
+                changedBounds));
             RestartBurpTimer();
-            Debug.Log("The grid boundary ate the food and loaded more room space.");
+            Debug.Log($"The grid boundary ate the food and pushed {addedCells.Count} wall cell(s) outward.");
             return true;
         }
 
@@ -116,25 +148,53 @@ namespace OopsItAte.Grid
 
         public bool TryGetBoundaryDirection(GridPosition position, out GridPosition direction)
         {
-            if (position.X == minX - 1 && position.Y >= minY && position.Y <= maxY)
+            if (loadedCells.Contains(position))
+            {
+                direction = default;
+                return false;
+            }
+
+            if (position.X == minX - 1 && position.Y >= minY && position.Y <= maxY
+                && loadedCells.Contains(position + new GridPosition(1, 0)))
             {
                 direction = new GridPosition(-1, 0);
                 return true;
             }
-            if (position.X == maxX + 1 && position.Y >= minY && position.Y <= maxY)
+            if (position.X == maxX + 1 && position.Y >= minY && position.Y <= maxY
+                && loadedCells.Contains(position + new GridPosition(-1, 0)))
             {
                 direction = new GridPosition(1, 0);
                 return true;
             }
-            if (position.Y == minY - 1 && position.X >= minX && position.X <= maxX)
+            if (position.Y == minY - 1 && position.X >= minX && position.X <= maxX
+                && loadedCells.Contains(position + new GridPosition(0, 1)))
             {
                 direction = new GridPosition(0, -1);
                 return true;
             }
-            if (position.Y == maxY + 1 && position.X >= minX && position.X <= maxX)
+            if (position.Y == maxY + 1 && position.X >= minX && position.X <= maxX
+                && loadedCells.Contains(position + new GridPosition(0, -1)))
             {
                 direction = new GridPosition(0, 1);
                 return true;
+            }
+
+            GridPosition[] directions =
+            {
+                new GridPosition(-1, 0),
+                new GridPosition(1, 0),
+                new GridPosition(0, -1),
+                new GridPosition(0, 1)
+            };
+            for (int i = 0; i < directions.Length; i++)
+            {
+                GridPosition candidate = directions[i];
+                GridPosition interior = position + new GridPosition(-candidate.X, -candidate.Y);
+                if (loadedCells.Contains(interior))
+                {
+                    direction = candidate;
+                    return true;
+                }
             }
 
             direction = default;
@@ -231,22 +291,87 @@ namespace OopsItAte.Grid
             Destroy(cell.GetComponent<Collider>());
         }
 
-        private void LoadVerticalEdge(int x)
+        private List<GridPosition> LoadVerticalEdge(int x)
         {
+            var addedCells = new List<GridPosition>();
             for (int y = minY; y <= maxY; y++)
             {
                 GridPosition position = new GridPosition(x, y);
+                if (!loadedCells.Contains(position))
+                {
+                    addedCells.Add(position);
+                }
+
                 SetCell(position, authoredWalls.Contains(position));
             }
+
+            return addedCells;
         }
 
-        private void LoadHorizontalEdge(int y)
+        private List<GridPosition> LoadFacingBoundaryLayer(
+            GridPosition start,
+            GridPosition outwardDirection)
         {
+            var addedCells = new List<GridPosition>();
+
+            // The player's facing defines the wall side. The target cell defines
+            // the face plane, so boundary cells behind the player are untouched.
+            // Collect before loading to keep the movement exactly one cell deep.
+            for (int y = minY; y <= maxY; y++)
+            {
+                for (int x = minX; x <= maxX; x++)
+                {
+                    GridPosition position = new GridPosition(x, y);
+                    if (loadedCells.Contains(position)
+                        || !IsAtOrBeyondPlayerFace(position, start, outwardDirection))
+                    {
+                        continue;
+                    }
+
+                    GridPosition inwardPosition = position + new GridPosition(
+                        -outwardDirection.X,
+                        -outwardDirection.Y);
+                    if (loadedCells.Contains(inwardPosition))
+                    {
+                        addedCells.Add(position);
+                    }
+                }
+            }
+
+            for (int i = 0; i < addedCells.Count; i++)
+            {
+                GridPosition position = addedCells[i];
+                SetCell(position, authoredWalls.Contains(position));
+            }
+
+            return addedCells;
+        }
+
+        private static bool IsAtOrBeyondPlayerFace(
+            GridPosition position,
+            GridPosition facePosition,
+            GridPosition outwardDirection)
+        {
+            int offsetX = position.X - facePosition.X;
+            int offsetY = position.Y - facePosition.Y;
+            return offsetX * outwardDirection.X + offsetY * outwardDirection.Y >= 0;
+        }
+
+        private List<GridPosition> LoadHorizontalEdge(int y)
+        {
+            var addedCells = new List<GridPosition>();
             for (int x = minX; x <= maxX; x++)
             {
                 GridPosition position = new GridPosition(x, y);
+                if (!loadedCells.Contains(position))
+                {
+                    addedCells.Add(position);
+                }
+
                 SetCell(position, authoredWalls.Contains(position));
             }
+
+            return addedCells;
         }
 
         private void SetCell(GridPosition position, bool isWall)
@@ -317,26 +442,12 @@ namespace OopsItAte.Grid
 
         private bool CanRemoveBoundaryLayer(BoundaryGrowthLayer layer)
         {
-            if (layer.Direction.X != 0)
+            for (int i = 0; i < layer.AddedCells.Count; i++)
             {
-                for (int y = minY; y <= maxY; y++)
+                GridPosition position = layer.AddedCells[i];
+                if (position.Equals(playerPosition) || dynamicBlockedCells.Contains(position))
                 {
-                    GridPosition position = new GridPosition(layer.Coordinate, y);
-                    if (position.Equals(playerPosition) || dynamicBlockedCells.Contains(position))
-                    {
-                        return false;
-                    }
-                }
-            }
-            else
-            {
-                for (int x = minX; x <= maxX; x++)
-                {
-                    GridPosition position = new GridPosition(x, layer.Coordinate);
-                    if (position.Equals(playerPosition) || dynamicBlockedCells.Contains(position))
-                    {
-                        return false;
-                    }
+                    return false;
                 }
             }
 
@@ -346,14 +457,12 @@ namespace OopsItAte.Grid
         private void TryPushBoundaryOccupants(BoundaryGrowthLayer layer)
         {
             GridPosition inwardDirection = new GridPosition(-layer.Direction.X, -layer.Direction.Y);
-            bool verticalBoundary = layer.Direction.X != 0;
 
             GridMover[] movers = FindObjectsByType<GridMover>();
             for (int i = 0; i < movers.Length; i++)
             {
                 GridMover mover = movers[i];
-                int coordinate = verticalBoundary ? mover.CurrentPosition.X : mover.CurrentPosition.Y;
-                if (mover.World != this || coordinate != layer.Coordinate)
+                if (mover.World != this || !layer.AddedCells.Contains(mover.CurrentPosition))
                 {
                     continue;
                 }
@@ -369,8 +478,7 @@ namespace OopsItAte.Grid
             for (int i = 0; i < boxes.Length; i++)
             {
                 PushableBox box = boxes[i];
-                int coordinate = verticalBoundary ? box.Position.X : box.Position.Y;
-                if (box.IsPushable && coordinate == layer.Coordinate)
+                if (box.IsPushable && layer.AddedCells.Contains(box.Position))
                 {
                     if (!TryPushPlayerAt(box.Position + inwardDirection, inwardDirection, movers))
                     {
@@ -385,7 +493,7 @@ namespace OopsItAte.Grid
             for (int i = 0; i < bodies.Length; i++)
             {
                 PetBody body = bodies[i];
-                if (body.TouchesBoundary(verticalBoundary, layer.Coordinate))
+                if (TouchesBoundaryLayer(body, layer))
                 {
                     if (body.WouldOccupyAfterShift(playerPosition, inwardDirection)
                         && !TryPushPlayerAt(playerPosition, inwardDirection, movers))
@@ -396,6 +504,19 @@ namespace OopsItAte.Grid
                     body.TryShift(inwardDirection);
                 }
             }
+        }
+
+        private static bool TouchesBoundaryLayer(PetBody body, BoundaryGrowthLayer layer)
+        {
+            for (int i = 0; i < layer.AddedCells.Count; i++)
+            {
+                if (body.Contains(layer.AddedCells[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private bool TryPushPlayerAt(
@@ -426,33 +547,43 @@ namespace OopsItAte.Grid
 
         private void RemoveBoundaryLayer(BoundaryGrowthLayer layer)
         {
-            if (layer.Direction.X != 0)
+            for (int i = 0; i < layer.AddedCells.Count; i++)
             {
-                for (int y = minY; y <= maxY; y++)
-                {
-                    RemoveCell(new GridPosition(layer.Coordinate, y));
-                }
-
-                if (layer.Direction.X < 0) minX++;
-                else maxX--;
-            }
-            else
-            {
-                for (int x = minX; x <= maxX; x++)
-                {
-                    RemoveCell(new GridPosition(x, layer.Coordinate));
-                }
-
-                if (layer.Direction.Y < 0) minY++;
-                else maxY--;
+                RemoveCell(layer.AddedCells[i]);
             }
 
-            GridPosition inwardDirection = new GridPosition(-layer.Direction.X, -layer.Direction.Y);
-            GridPosition previousDoorBoundary = layer.Direction.X != 0
-                ? new GridPosition(layer.Coordinate + layer.Direction.X, 0)
-                : new GridPosition(0, layer.Coordinate + layer.Direction.Y);
-            BoundaryExpanded?.Invoke(inwardDirection, previousDoorBoundary);
+            if (layer.ChangedBounds)
+            {
+                if (layer.Direction.X < 0)
+                {
+                    minX++;
+                }
+                else if (layer.Direction.X > 0)
+                {
+                    maxX--;
+                }
+                else if (layer.Direction.Y < 0)
+                {
+                    minY++;
+                }
+                else
+                {
+                    maxY--;
+                }
+
+                GridPosition inwardDirection = new GridPosition(-layer.Direction.X, -layer.Direction.Y);
+                GridPosition previousDoorBoundary = layer.Direction.X != 0
+                    ? new GridPosition(layer.Coordinate + layer.Direction.X, 0)
+                    : new GridPosition(0, layer.Coordinate + layer.Direction.Y);
+                BoundaryExpanded?.Invoke(inwardDirection, previousDoorBoundary);
+            }
+
             RefreshCamera();
+        }
+
+        private static bool IsCardinalDirection(GridPosition direction)
+        {
+            return Mathf.Abs(direction.X) + Mathf.Abs(direction.Y) == 1;
         }
 
         private bool IsInsideCurrentBounds(GridPosition position)

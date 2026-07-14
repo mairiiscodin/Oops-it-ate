@@ -7,6 +7,7 @@ namespace OopsItAte.Grid
         [SerializeField] private GridWorld world;
         [SerializeField] private GridPosition currentPosition = new GridPosition(1, 1);
         [SerializeField] private GridPosition facingDirection = new GridPosition(0, -1);
+        [SerializeField] private PlayerMovementVisual movementVisual;
 
         private Transform facingIndicator;
 
@@ -14,33 +15,46 @@ namespace OopsItAte.Grid
         public GridWorld World => world;
         public GridPosition FacingDirection => facingDirection;
         public GridPosition FacingPosition => currentPosition + facingDirection;
+        public bool IsMoving => movementVisual != null && movementVisual.IsAnimating;
 
         public void Initialize(GridWorld gridWorld, GridPosition startPosition)
         {
             world = gridWorld;
             currentPosition = startPosition;
+            EnsureMovementVisual();
             EnsureFacingIndicator();
             SnapToGrid();
             RefreshFacingIndicator();
+            movementVisual?.SetFacing(facingDirection);
         }
 
         public bool TryMove(GridPosition direction)
         {
+            if (IsMoving)
+            {
+                return false;
+            }
+
             if (!direction.Equals(default))
             {
                 facingDirection = direction;
                 RefreshFacingIndicator();
+                movementVisual?.SetFacing(facingDirection);
             }
 
             GridPosition nextPosition = currentPosition + direction;
 
             if (!CanMoveTo(nextPosition))
             {
+                movementVisual?.PlayBlockedStep(direction, world.Settings.cellSize);
                 return false;
             }
 
+            Vector3 previousWorldPosition = world.Settings.GridToWorld(currentPosition);
             currentPosition = nextPosition;
             SnapToGrid();
+            Vector3 worldDelta = world.Settings.GridToWorld(currentPosition) - previousWorldPosition;
+            movementVisual?.PlayStep(worldDelta, direction);
             return true;
         }
 
@@ -51,8 +65,28 @@ namespace OopsItAte.Grid
 
         public void MoveTo(GridPosition position)
         {
+            GridPosition direction = new GridPosition(
+                System.Math.Sign(position.X - currentPosition.X),
+                System.Math.Sign(position.Y - currentPosition.Y));
+            Vector3 previousWorldPosition = world.Settings.GridToWorld(currentPosition);
             currentPosition = position;
             SnapToGrid();
+
+            if (!direction.Equals(default))
+            {
+                facingDirection = direction;
+                RefreshFacingIndicator();
+                Vector3 worldDelta = world.Settings.GridToWorld(currentPosition) - previousWorldPosition;
+                movementVisual?.PlayStep(worldDelta, direction);
+            }
+        }
+
+        private void EnsureMovementVisual()
+        {
+            if (movementVisual == null)
+            {
+                movementVisual = GetComponent<PlayerMovementVisual>();
+            }
         }
 
         private void SnapToGrid()
