@@ -31,10 +31,20 @@ namespace OopsItAte.Actors
         [FormerlySerializedAs("normalDogVisual")]
         [SerializeField] private GameObject normalVisual;
 
-        [Header("Big Pet Sprites")]
+        [Header("Big Pet Body Tiles")]
         [Tooltip("Fallback sprite for an outer/side body cell.")]
         [SerializeField] private Sprite bigDogSide;
-        [SerializeField] private Sprite bigDogFace;
+        [Header("Body Tile - Open On 3 Sides")]
+        [Tooltip("Tile with only a North neighbour; East, South and West are open.")]
+        [SerializeField] private Sprite bigDogOpen3ConnectedNorth;
+        [Tooltip("Tile with only an East neighbour; North, South and West are open.")]
+        [SerializeField] private Sprite bigDogOpen3ConnectedEast;
+        [Tooltip("Tile with only a South neighbour; North, East and West are open.")]
+        [SerializeField] private Sprite bigDogOpen3ConnectedSouth;
+        [Tooltip("Tile with only a West neighbour; North, East and South are open.")]
+        [SerializeField] private Sprite bigDogOpen3ConnectedWest;
+
+        [Header("Body Tile - Corners And Edges")]
         [SerializeField] private Sprite bigDogNE;
         [SerializeField] private Sprite bigDogES;
         [SerializeField] private Sprite bigDogWN;
@@ -44,12 +54,21 @@ namespace OopsItAte.Actors
         [SerializeField] private Sprite bigDogNSW;
         [SerializeField] private Sprite bigDogESW;
 
+        [Header("Big Pet Face Overlay")]
+        [Tooltip("Transparent face drawn once at the center of the largest filled body rectangle.")]
+        [SerializeField] private Sprite bigDogFace;
+        [Tooltip("Optional face used when the largest body rectangle is 1 cell wide and 2 cells tall.")]
+        [SerializeField] private Sprite bigDogFace1x2Vertical;
+        [Tooltip("Optional face used when the largest body rectangle is 2 cells wide and 1 cell tall.")]
+        [SerializeField] private Sprite bigDogFace2x1Horizontal;
+
         private readonly HashSet<GridPosition> bodyCells = new HashSet<GridPosition>();
         private readonly Dictionary<GridPosition, GameObject> visuals = new Dictionary<GridPosition, GameObject>();
         private readonly List<List<GridPosition>> growthLayers = new List<List<GridPosition>>();
         private GridWorld world;
         private Material bodyMaterial;
         private Coroutine burpCoroutine;
+        private GameObject bigPetFaceVisual;
 
         public void Initialize(GridWorld gridWorld, GridPosition startPosition)
         {
@@ -633,16 +652,19 @@ namespace OopsItAte.Actors
                 }
 
                 visuals.Clear();
+                DestroyBigPetFaceVisual();
                 AddBlockers();
                 return;
             }
 
-            if (UsesBigPetSprites())
+            if (bodyCells.Count > 1 && UsesBigPetBodySprites())
             {
                 RedrawBigPetSprites();
                 AddBlockers();
                 return;
             }
+
+            DestroyBigPetFaceVisual();
 
             var removedCells = new List<GridPosition>();
             foreach (GridPosition cell in visuals.Keys)
@@ -683,14 +705,18 @@ namespace OopsItAte.Actors
                 visuals.Add(cell, visual);
             }
 
+            CreateBigPetFaceVisual();
             AddBlockers();
         }
 
-        private bool UsesBigPetSprites()
+        private bool UsesBigPetBodySprites()
         {
             return string.Equals(bodyName, "Pet", StringComparison.OrdinalIgnoreCase)
                 && (bigDogSide != null
-                    || bigDogFace != null
+                    || bigDogOpen3ConnectedNorth != null
+                    || bigDogOpen3ConnectedEast != null
+                    || bigDogOpen3ConnectedSouth != null
+                    || bigDogOpen3ConnectedWest != null
                     || bigDogNE != null
                     || bigDogES != null
                     || bigDogWN != null
@@ -710,6 +736,7 @@ namespace OopsItAte.Actors
                 Destroy(visual);
             }
             visuals.Clear();
+            DestroyBigPetFaceVisual();
 
             foreach (GridPosition cell in bodyCells)
             {
@@ -736,6 +763,159 @@ namespace OopsItAte.Actors
                     + Mathf.RoundToInt(-cellCenter.y * 100f);
                 visuals.Add(cell, visual);
             }
+
+            CreateBigPetFaceVisual();
+        }
+
+        private void CreateBigPetFaceVisual()
+        {
+            if (bodyCells.Count <= 1
+                || !TryFindLargestBodyRectangle(out GridPosition bottomLeft, out GridPosition topRight))
+            {
+                return;
+            }
+
+            int rectangleWidth = topRight.X - bottomLeft.X + 1;
+            int rectangleHeight = topRight.Y - bottomLeft.Y + 1;
+            Sprite faceSprite = bigDogFace;
+            if (rectangleWidth == 1 && rectangleHeight == 2 && bigDogFace1x2Vertical != null)
+            {
+                faceSprite = bigDogFace1x2Vertical;
+            }
+            else if (rectangleWidth == 2 && rectangleHeight == 1 && bigDogFace2x1Horizontal != null)
+            {
+                faceSprite = bigDogFace2x1Horizontal;
+            }
+
+            if (faceSprite == null)
+            {
+                return;
+            }
+
+            Vector3 bottomLeftWorld = world.Settings.GridToWorld(bottomLeft);
+            Vector3 topRightWorld = world.Settings.GridToWorld(topRight);
+            Vector3 rectangleCenter = (bottomLeftWorld + topRightWorld) * 0.5f
+                + Vector3.back * 0.6f;
+
+            bigPetFaceVisual = new GameObject($"{bodyName} Face");
+            bigPetFaceVisual.transform.SetParent(transform);
+
+            Sprite scaleReference = bigDogSide != null ? bigDogSide : faceSprite;
+            float referenceSize = Mathf.Max(
+                scaleReference.bounds.size.x,
+                scaleReference.bounds.size.y);
+            float scale = referenceSize > 0f
+                ? world.Settings.cellSize * 0.88f / referenceSize
+                : 1f;
+            bigPetFaceVisual.transform.localScale = Vector3.one * scale;
+            bigPetFaceVisual.transform.position = rectangleCenter
+                - (Vector3)(faceSprite.bounds.center * scale);
+
+            SpriteRenderer renderer = bigPetFaceVisual.AddComponent<SpriteRenderer>();
+            renderer.sprite = faceSprite;
+            renderer.sortingOrder = GetHighestBodySortingOrder() + 1;
+        }
+
+        private int GetHighestBodySortingOrder()
+        {
+            int highestOrder = ActorSortingOrderBase;
+            foreach (GameObject visual in visuals.Values)
+            {
+                SpriteRenderer bodyRenderer = visual.GetComponent<SpriteRenderer>();
+                if (bodyRenderer != null)
+                {
+                    highestOrder = Mathf.Max(highestOrder, bodyRenderer.sortingOrder);
+                }
+            }
+
+            return highestOrder;
+        }
+
+        private bool TryFindLargestBodyRectangle(
+            out GridPosition bestBottomLeft,
+            out GridPosition bestTopRight)
+        {
+            bestBottomLeft = default;
+            bestTopRight = default;
+            if (bodyCells.Count == 0)
+            {
+                return false;
+            }
+
+            int minX = int.MaxValue;
+            int maxX = int.MinValue;
+            int minY = int.MaxValue;
+            int maxY = int.MinValue;
+            foreach (GridPosition cell in bodyCells)
+            {
+                minX = Mathf.Min(minX, cell.X);
+                maxX = Mathf.Max(maxX, cell.X);
+                minY = Mathf.Min(minY, cell.Y);
+                maxY = Mathf.Max(maxY, cell.Y);
+            }
+
+            int bestArea = 0;
+            float bestDistanceToOrigin = float.MaxValue;
+            for (int bottom = minY; bottom <= maxY; bottom++)
+            {
+                for (int top = bottom; top <= maxY; top++)
+                {
+                    for (int left = minX; left <= maxX; left++)
+                    {
+                        for (int right = left; right <= maxX; right++)
+                        {
+                            int area = (right - left + 1) * (top - bottom + 1);
+                            if (area < bestArea || !IsBodyRectangleFilled(left, right, bottom, top))
+                            {
+                                continue;
+                            }
+
+                            float centerX = (left + right) * 0.5f;
+                            float centerY = (bottom + top) * 0.5f;
+                            float distanceToOrigin = (centerX - origin.X) * (centerX - origin.X)
+                                + (centerY - origin.Y) * (centerY - origin.Y);
+                            if (area == bestArea && distanceToOrigin >= bestDistanceToOrigin)
+                            {
+                                continue;
+                            }
+
+                            bestArea = area;
+                            bestDistanceToOrigin = distanceToOrigin;
+                            bestBottomLeft = new GridPosition(left, bottom);
+                            bestTopRight = new GridPosition(right, top);
+                        }
+                    }
+                }
+            }
+
+            return bestArea > 0;
+        }
+
+        private bool IsBodyRectangleFilled(int left, int right, int bottom, int top)
+        {
+            for (int y = bottom; y <= top; y++)
+            {
+                for (int x = left; x <= right; x++)
+                {
+                    if (!bodyCells.Contains(new GridPosition(x, y)))
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private void DestroyBigPetFaceVisual()
+        {
+            if (bigPetFaceVisual == null)
+            {
+                return;
+            }
+
+            Destroy(bigPetFaceVisual);
+            bigPetFaceVisual = null;
         }
 
         private Sprite GetBigPetSprite(GridPosition cell)
@@ -748,6 +928,10 @@ namespace OopsItAte.Actors
 
             Sprite selected = mask switch
             {
+                1 => bigDogOpen3ConnectedNorth,
+                2 => bigDogOpen3ConnectedEast,
+                4 => bigDogOpen3ConnectedSouth,
+                8 => bigDogOpen3ConnectedWest,
                 3 => bigDogNE,
                 6 => bigDogES,
                 9 => bigDogWN,
@@ -756,7 +940,6 @@ namespace OopsItAte.Actors
                 11 => bigDogNEW,
                 13 => bigDogNSW,
                 14 => bigDogESW,
-                15 => bigDogFace,
                 _ => bigDogSide
             };
 
