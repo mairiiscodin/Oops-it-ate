@@ -150,7 +150,17 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Actors.PetBody
   color: {r: 0.25, g: 0.9, b: 0.35, a: 1}
   bodyName: Pet
-  normalVisual: {fileID: 0}
+  normalVisual: {fileID: -2253911629886400664, guid: f4960a1f34501b24593b1e23be220df3, type: 3}
+  bigDogSide: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
+  bigDogFace: {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  bigDogNE: {fileID: -1775637345138759990, guid: 7d5f0fffd7e680a42939d6d32f6aef87, type: 3}
+  bigDogES: {fileID: 4650782177985915308, guid: 3f66abfd812c1964d8f93a238aaebe42, type: 3}
+  bigDogWN: {fileID: -5209184284951002492, guid: d4308b07e5eba4647832d860f6fda58e, type: 3}
+  bigDogWS: {fileID: 1669955001949877241, guid: b904f7e013f9b7c4b8601ff260e537e5, type: 3}
+  bigDogNES: {fileID: 9008817623733193801, guid: 810d46062e2438645933b0ab17561b9d, type: 3}
+  bigDogNEW: {fileID: 5768884981487863313, guid: e9b1dbd687ef1a243a0ad309972edc2f, type: 3}
+  bigDogNSW: {fileID: 1751097608498928227, guid: d9eca39cf2dc08f44ad6c9e8c84a03c3, type: 3}
+  bigDogESW: {fileID: 4965653968227792412, guid: 4e4d8c05ec65eaf44a01d20efe5db40b, type: 3}
 --- !u!4 &32240737
 Transform:
   m_ObjectHideFlags: 0
@@ -1314,7 +1324,7 @@ Transform:
   m_GameObject: {fileID: 930300000004}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.37278, z: 0}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 3.1302, y: 3.1302, z: 3.1302}
   m_ConstrainProportionsScale: 0
   m_Children: []

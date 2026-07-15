@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 4c81dc17a8773134487710aa9c175592
+guid: 7d5f0fffd7e680a42939d6d32f6aef87
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: ChefSide
+  - name: BigDogNE
     originalName: 
-    pivot: {x: 0.4642857, y: 0.42105263}
+    pivot: {x: 0.5, y: 0}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 28
-      height: 38
-    spriteID: 4d4d8c5e789d87c438ae3ffbf9443682
+      width: 32
+      height: 32
+    spriteID: bc1c274db06c69447a5d5124957c07ee
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 3559064951
+      value0: 414853331
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: ChefSide
+    name: BigDogNE
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: ChefSide
+    - name: BigDogNE
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 1
+        x: 0
         y: 0
-        width: 28
-        height: 38
-      spriteId: 4d4d8c5e789d87c438ae3ffbf9443682
+        width: 32
+        height: 32
+      spriteId: bc1c274db06c69447a5d5124957c07ee
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 32, y: 38}
+  canvasSize: {x: 32, y: 32}
   previousTextureSize: {x: 64, y: 64}

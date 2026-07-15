@@ -50,6 +50,45 @@ namespace OopsItAte.Levels
 
         public bool Contains(GridPosition gridPosition) => cells.Contains(gridPosition);
 
+        public bool TouchesAny(IReadOnlyList<GridPosition> positions)
+        {
+            for (int i = 0; i < positions.Count; i++)
+            {
+                if (cells.Contains(positions[i]))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        public void Shift(GridPosition direction)
+        {
+            position += direction;
+            var movedCells = new HashSet<GridPosition>();
+            foreach (GridPosition cell in cells)
+            {
+                movedCells.Add(cell + direction);
+            }
+
+            cells.Clear();
+            foreach (GridPosition cell in movedCells)
+            {
+                cells.Add(cell);
+            }
+
+            for (int layer = 0; layer < growthLayers.Count; layer++)
+            {
+                for (int i = 0; i < growthLayers[layer].Count; i++)
+                {
+                    growthLayers[layer][i] += direction;
+                }
+            }
+
+            Redraw();
+        }
+
         public bool FeedAndGrow()
         {
             if (boundaryDirection.Equals(default))
@@ -87,25 +126,10 @@ namespace OopsItAte.Levels
                 return;
             }
 
-            position += direction;
-            var movedCells = new HashSet<GridPosition>();
-            foreach (GridPosition cell in cells)
-            {
-                movedCells.Add(cell + direction);
-            }
-            cells.Clear();
-            foreach (GridPosition cell in movedCells) cells.Add(cell);
-            for (int layer = 0; layer < growthLayers.Count; layer++)
-            {
-                for (int i = 0; i < growthLayers[layer].Count; i++)
-                {
-                    growthLayers[layer][i] += direction;
-                }
-            }
+            Shift(direction);
             boundaryDirection = new GridPosition(-direction.X, -direction.Y).Equals(boundaryDirection)
                 ? boundaryDirection
                 : direction;
-            Redraw();
         }
 
         private void EnsureVisual()

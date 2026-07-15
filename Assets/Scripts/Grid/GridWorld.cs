@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using OopsItAte.Actors;
+using OopsItAte.Levels;
 using UnityEngine;
 
 namespace OopsItAte.Grid
@@ -117,7 +118,9 @@ namespace OopsItAte.Grid
             else
             {
                 changedBounds = false;
-                addedCells = LoadFacingBoundaryLayer(unloadedPosition, outwardDirection);
+                addedCells = outwardDirection.X != 0
+                    ? LoadVerticalEdge(unloadedPosition.X)
+                    : LoadHorizontalEdge(unloadedPosition.Y);
                 if (addedCells.Count == 0)
                 {
                     return false;
@@ -308,55 +311,6 @@ namespace OopsItAte.Grid
             return addedCells;
         }
 
-        private List<GridPosition> LoadFacingBoundaryLayer(
-            GridPosition start,
-            GridPosition outwardDirection)
-        {
-            var addedCells = new List<GridPosition>();
-
-            // The player's facing defines the wall side. The target cell defines
-            // the face plane, so boundary cells behind the player are untouched.
-            // Collect before loading to keep the movement exactly one cell deep.
-            for (int y = minY; y <= maxY; y++)
-            {
-                for (int x = minX; x <= maxX; x++)
-                {
-                    GridPosition position = new GridPosition(x, y);
-                    if (loadedCells.Contains(position)
-                        || !IsAtOrBeyondPlayerFace(position, start, outwardDirection))
-                    {
-                        continue;
-                    }
-
-                    GridPosition inwardPosition = position + new GridPosition(
-                        -outwardDirection.X,
-                        -outwardDirection.Y);
-                    if (loadedCells.Contains(inwardPosition))
-                    {
-                        addedCells.Add(position);
-                    }
-                }
-            }
-
-            for (int i = 0; i < addedCells.Count; i++)
-            {
-                GridPosition position = addedCells[i];
-                SetCell(position, authoredWalls.Contains(position));
-            }
-
-            return addedCells;
-        }
-
-        private static bool IsAtOrBeyondPlayerFace(
-            GridPosition position,
-            GridPosition facePosition,
-            GridPosition outwardDirection)
-        {
-            int offsetX = position.X - facePosition.X;
-            int offsetY = position.Y - facePosition.Y;
-            return offsetX * outwardDirection.X + offsetY * outwardDirection.Y >= 0;
-        }
-
         private List<GridPosition> LoadHorizontalEdge(int y)
         {
             var addedCells = new List<GridPosition>();
@@ -442,10 +396,21 @@ namespace OopsItAte.Grid
 
         private bool CanRemoveBoundaryLayer(BoundaryGrowthLayer layer)
         {
+            DoorExit[] doors = FindObjectsByType<DoorExit>();
+            for (int i = 0; i < doors.Length; i++)
+            {
+                if (doors[i].TouchesAny(layer.AddedCells))
+                {
+                    return false;
+                }
+            }
+
             for (int i = 0; i < layer.AddedCells.Count; i++)
             {
                 GridPosition position = layer.AddedCells[i];
-                if (position.Equals(playerPosition) || dynamicBlockedCells.Contains(position))
+                if (position.Equals(playerPosition)
+                    || dynamicBlockedCells.Contains(position)
+                    || authoredWalls.Contains(position))
                 {
                     return false;
                 }
@@ -459,6 +424,8 @@ namespace OopsItAte.Grid
             GridPosition inwardDirection = new GridPosition(-layer.Direction.X, -layer.Direction.Y);
 
             GridMover[] movers = FindObjectsByType<GridMover>();
+            PushDoorsInward(layer, inwardDirection);
+            TryPushAuthoredWalls(layer, inwardDirection, movers);
             for (int i = 0; i < movers.Length; i++)
             {
                 GridMover mover = movers[i];
@@ -503,6 +470,57 @@ namespace OopsItAte.Grid
 
                     body.TryShift(inwardDirection);
                 }
+            }
+        }
+
+        private static void PushDoorsInward(
+            BoundaryGrowthLayer layer,
+            GridPosition inwardDirection)
+        {
+            DoorExit[] doors = FindObjectsByType<DoorExit>();
+            for (int i = 0; i < doors.Length; i++)
+            {
+                if (doors[i].TouchesAny(layer.AddedCells))
+                {
+                    doors[i].Shift(inwardDirection);
+                }
+            }
+        }
+
+        private void TryPushAuthoredWalls(
+            BoundaryGrowthLayer layer,
+            GridPosition inwardDirection,
+            GridMover[] movers)
+        {
+            for (int i = 0; i < layer.AddedCells.Count; i++)
+            {
+                GridPosition source = layer.AddedCells[i];
+                if (!authoredWalls.Contains(source))
+                {
+                    continue;
+                }
+
+                GridPosition target = source + inwardDirection;
+                if (target.Equals(playerPosition)
+                    && !TryPushPlayerAt(target, inwardDirection, movers))
+                {
+                    continue;
+                }
+
+                if (!loadedCells.Contains(target)
+                    || authoredWalls.Contains(target)
+                    || dynamicBlockedCells.Contains(target))
+                {
+                    continue;
+                }
+
+                authoredWalls.Remove(source);
+                blockedCells.Remove(source);
+                SetCell(source, false);
+
+                authoredWalls.Add(target);
+                blockedCells.Add(target);
+                SetCell(target, true);
             }
         }
 

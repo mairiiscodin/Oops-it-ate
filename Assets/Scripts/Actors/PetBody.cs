@@ -31,6 +31,19 @@ namespace OopsItAte.Actors
         [FormerlySerializedAs("normalDogVisual")]
         [SerializeField] private GameObject normalVisual;
 
+        [Header("Big Pet Sprites")]
+        [Tooltip("Fallback sprite for an outer/side body cell.")]
+        [SerializeField] private Sprite bigDogSide;
+        [SerializeField] private Sprite bigDogFace;
+        [SerializeField] private Sprite bigDogNE;
+        [SerializeField] private Sprite bigDogES;
+        [SerializeField] private Sprite bigDogWN;
+        [SerializeField] private Sprite bigDogWS;
+        [SerializeField] private Sprite bigDogNES;
+        [SerializeField] private Sprite bigDogNEW;
+        [SerializeField] private Sprite bigDogNSW;
+        [SerializeField] private Sprite bigDogESW;
+
         private readonly HashSet<GridPosition> bodyCells = new HashSet<GridPosition>();
         private readonly Dictionary<GridPosition, GameObject> visuals = new Dictionary<GridPosition, GameObject>();
         private readonly List<List<GridPosition>> growthLayers = new List<List<GridPosition>>();
@@ -624,6 +637,13 @@ namespace OopsItAte.Actors
                 return;
             }
 
+            if (UsesBigPetSprites())
+            {
+                RedrawBigPetSprites();
+                AddBlockers();
+                return;
+            }
+
             var removedCells = new List<GridPosition>();
             foreach (GridPosition cell in visuals.Keys)
             {
@@ -664,6 +684,83 @@ namespace OopsItAte.Actors
             }
 
             AddBlockers();
+        }
+
+        private bool UsesBigPetSprites()
+        {
+            return string.Equals(bodyName, "Pet", StringComparison.OrdinalIgnoreCase)
+                && (bigDogSide != null
+                    || bigDogFace != null
+                    || bigDogNE != null
+                    || bigDogES != null
+                    || bigDogWN != null
+                    || bigDogWS != null
+                    || bigDogNES != null
+                    || bigDogNEW != null
+                    || bigDogNSW != null
+                    || bigDogESW != null);
+        }
+
+        private void RedrawBigPetSprites()
+        {
+            // A cell's artwork can change when a new neighbour grows beside it,
+            // so rebuild the small visual set whenever the body shape changes.
+            foreach (GameObject visual in visuals.Values)
+            {
+                Destroy(visual);
+            }
+            visuals.Clear();
+
+            foreach (GridPosition cell in bodyCells)
+            {
+                Sprite sprite = GetBigPetSprite(cell);
+                if (sprite == null)
+                {
+                    continue;
+                }
+
+                GameObject visual = new GameObject($"{bodyName} Body {cell}");
+                visual.transform.SetParent(transform);
+
+                float targetSize = world.Settings.cellSize * 0.88f;
+                float spriteSize = Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y);
+                float scale = spriteSize > 0f ? targetSize / spriteSize : 1f;
+                visual.transform.localScale = Vector3.one * scale;
+
+                Vector3 cellCenter = world.Settings.GridToWorld(cell) + Vector3.back * 0.5f;
+                visual.transform.position = cellCenter - (Vector3)(sprite.bounds.center * scale);
+
+                SpriteRenderer renderer = visual.AddComponent<SpriteRenderer>();
+                renderer.sprite = sprite;
+                renderer.sortingOrder = ActorSortingOrderBase
+                    + Mathf.RoundToInt(-cellCenter.y * 100f);
+                visuals.Add(cell, visual);
+            }
+        }
+
+        private Sprite GetBigPetSprite(GridPosition cell)
+        {
+            int mask = 0;
+            if (bodyCells.Contains(cell + new GridPosition(0, 1))) mask |= 1;  // N
+            if (bodyCells.Contains(cell + new GridPosition(1, 0))) mask |= 2;  // E
+            if (bodyCells.Contains(cell + new GridPosition(0, -1))) mask |= 4; // S
+            if (bodyCells.Contains(cell + new GridPosition(-1, 0))) mask |= 8; // W
+
+            Sprite selected = mask switch
+            {
+                3 => bigDogNE,
+                6 => bigDogES,
+                9 => bigDogWN,
+                12 => bigDogWS,
+                7 => bigDogNES,
+                11 => bigDogNEW,
+                13 => bigDogNSW,
+                14 => bigDogESW,
+                15 => bigDogFace,
+                _ => bigDogSide
+            };
+
+            return selected != null ? selected : bigDogSide;
         }
 
         private void FindNormalVisual()
