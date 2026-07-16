@@ -178,7 +178,7 @@ namespace OopsItAte.Levels
                     visuals[cell] = visual;
                 }
                 visual.transform.position = grid.GridToWorld(cell) + Vector3.back * 0.2f;
-                visual.transform.localScale = Vector3.one * grid.cellSize * 0.92f;
+                visual.transform.localScale = Vector3.one * grid.cellSize;
             }
         }
 
@@ -251,7 +251,7 @@ namespace OopsItAte.Levels
         private void OnDrawGizmos()
         {
             Gizmos.color = color;
-            Gizmos.DrawCube(transform.position, Vector3.one * 0.92f);
+            Gizmos.DrawCube(transform.position, Vector3.one);
         }
     }
 }

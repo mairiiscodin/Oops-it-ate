@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using OopsItAte.Actors;
@@ -13,41 +12,33 @@ namespace OopsItAte.Grid
         [SerializeField] private Color floorColor = new Color(0.16f, 0.16f, 0.16f);
         [SerializeField] private Color wallColor = new Color(0.45f, 0.45f, 0.45f);
 
-        private readonly HashSet<GridPosition> blockedCells = new HashSet<GridPosition>();
-        private readonly HashSet<GridPosition> authoredWalls = new HashSet<GridPosition>();
-        private readonly HashSet<GridPosition> loadedCells = new HashSet<GridPosition>();
-        private readonly HashSet<GridPosition> dynamicBlockedCells = new HashSet<GridPosition>();
-        private readonly Dictionary<GridPosition, MeshRenderer> cellRenderers = new Dictionary<GridPosition, MeshRenderer>();
-        private int minX;
-        private int maxX;
-        private int minY;
-        private int maxY;
+        private readonly GridCellMap cellMap = new GridCellMap();
+        private GridCellView cellView;
         private GridPosition playerPosition;
-        private readonly List<BoundaryGrowthLayer> boundaryGrowthLayers = new List<BoundaryGrowthLayer>();
-        private Coroutine burpCoroutine;
+        private readonly List<VoidPushLayer> voidPushLayers = new List<VoidPushLayer>();
+        private Coroutine voidBurpCoroutine;
 
-        private sealed class BoundaryGrowthLayer
+        private sealed class VoidPushLayer
         {
-            public BoundaryGrowthLayer(
+            public VoidPushLayer(
                 GridPosition direction,
-                int coordinate,
-                List<GridPosition> addedCells,
-                bool changedBounds)
+                List<GridPosition> filledCells,
+                List<GridPosition> emptiedCells,
+                List<DoorExit> movedDoors)
             {
                 Direction = direction;
-                Coordinate = coordinate;
-                AddedCells = addedCells;
-                ChangedBounds = changedBounds;
+                FilledCells = filledCells;
+                EmptiedCells = emptiedCells;
+                MovedDoors = movedDoors;
             }
 
             public GridPosition Direction { get; }
-            public int Coordinate { get; }
-            public List<GridPosition> AddedCells { get; }
-            public bool ChangedBounds { get; }
+            public List<GridPosition> FilledCells { get; }
+            public List<GridPosition> EmptiedCells { get; }
+            public List<DoorExit> MovedDoors { get; }
         }
 
         public GridSettings Settings => settings;
-        public event Action<GridPosition, GridPosition> BoundaryExpanded;
 
         public void Initialize(
             GridSettings gridSettings,
@@ -55,93 +46,161 @@ namespace OopsItAte.Grid
             IEnumerable<GridPosition> levelCells = null)
         {
             settings = gridSettings;
-            minX = 0;
-            maxX = settings.width - 1;
-            minY = 0;
-            maxY = settings.height - 1;
-            BuildLoadedCells(levelCells);
-            BuildWalls(levelWalls);
-            DrawGrid();
+            cellMap.Initialize(settings.width, settings.height, levelWalls, levelCells);
+            cellView = new GridCellView(transform, settings, floorColor, wallColor);
+            cellView.Draw(cellMap.LoadedCells, cellMap.IsAuthoredWall);
         }
 
         public bool CanEnter(GridPosition position)
         {
-            return loadedCells.Contains(position) && !blockedCells.Contains(position) && !dynamicBlockedCells.Contains(position);
+            return cellMap.CanEnter(position);
         }
 
         public bool IsBlocked(GridPosition position)
         {
-            return !loadedCells.Contains(position) || blockedCells.Contains(position) || dynamicBlockedCells.Contains(position);
+            return cellMap.IsBlocked(position);
         }
 
-        public bool TryExpandBoundary(GridPosition unloadedPosition, GridPosition outwardDirection)
+        public bool TryPushVoid(GridPosition voidPosition, GridPosition outwardDirection)
         {
             if (!IsCardinalDirection(outwardDirection)
-                || loadedCells.Contains(unloadedPosition)
-                || !loadedCells.Contains(unloadedPosition + new GridPosition(
-                    -outwardDirection.X,
-                    -outwardDirection.Y)))
+                || cellMap.IsLoaded(voidPosition)
+                || cellMap.IsAuthoredWall(voidPosition)
+                || cellMap.IsDynamicBlocker(voidPosition)
+                || HasDoorAt(voidPosition))
             {
                 return false;
             }
 
-            List<GridPosition> addedCells;
-            bool changedBounds = true;
-            if (outwardDirection.Equals(new GridPosition(-1, 0))
-                && unloadedPosition.X == minX - 1
-                && unloadedPosition.Y >= minY && unloadedPosition.Y <= maxY)
+            List<GridPosition> voidLine = FindContiguousVoidLine(voidPosition, outwardDirection);
+            if (voidLine.Count == 0 || !CanShiftVoidLine(voidLine, outwardDirection))
             {
-                minX--;
-                addedCells = LoadVerticalEdge(minX);
+                return false;
             }
-            else if (outwardDirection.Equals(new GridPosition(1, 0))
-                && unloadedPosition.X == maxX + 1
-                && unloadedPosition.Y >= minY && unloadedPosition.Y <= maxY)
+
+            List<DoorExit> movedDoors = FindDoorsOnLine(voidLine);
+            var emptiedCells = new List<GridPosition>();
+            for (int i = 0; i < voidLine.Count; i++)
             {
-                maxX++;
-                addedCells = LoadVerticalEdge(maxX);
+                GridPosition source = voidLine[i];
+                GridPosition destination = source + outwardDirection;
+
+                cellMap.LoadCell(source);
+                RefreshCell(source);
+
+                if (cellMap.IsLoaded(destination))
+                {
+                    emptiedCells.Add(destination);
+                    RemoveCell(destination);
+                }
             }
-            else if (outwardDirection.Equals(new GridPosition(0, -1))
-                && unloadedPosition.Y == minY - 1
-                && unloadedPosition.X >= minX && unloadedPosition.X <= maxX)
+
+            for (int i = 0; i < movedDoors.Count; i++)
             {
-                minY--;
-                addedCells = LoadHorizontalEdge(minY);
+                movedDoors[i].Shift(outwardDirection);
             }
-            else if (outwardDirection.Equals(new GridPosition(0, 1))
-                && unloadedPosition.Y == maxY + 1
-                && unloadedPosition.X >= minX && unloadedPosition.X <= maxX)
+
+            voidPushLayers.Add(new VoidPushLayer(
+                outwardDirection,
+                voidLine,
+                emptiedCells,
+                movedDoors));
+            RefreshCamera();
+            RestartVoidBurpTimer();
+            Debug.Log($"The grid pushed a line of {voidLine.Count} empty cell(s) outward.");
+            return true;
+        }
+
+        private List<GridPosition> FindContiguousVoidLine(
+            GridPosition origin,
+            GridPosition outwardDirection)
+        {
+            var result = new List<GridPosition>();
+            if (!IsVoidBoundaryCell(origin, outwardDirection))
             {
-                maxY++;
-                addedCells = LoadHorizontalEdge(maxY);
+                return result;
             }
-            else
+
+            result.Add(origin);
+            GridPosition tangent = outwardDirection.X != 0
+                ? new GridPosition(0, 1)
+                : new GridPosition(1, 0);
+            AddVoidLineSide(result, origin, tangent, outwardDirection);
+            AddVoidLineSide(
+                result,
+                origin,
+                new GridPosition(-tangent.X, -tangent.Y),
+                outwardDirection);
+            return result;
+        }
+
+        private void AddVoidLineSide(
+            ICollection<GridPosition> result,
+            GridPosition origin,
+            GridPosition tangent,
+            GridPosition outwardDirection)
+        {
+            GridPosition candidate = origin + tangent;
+            while (IsInsideTransverseBounds(candidate, outwardDirection)
+                && IsVoidBoundaryCell(candidate, outwardDirection))
             {
-                changedBounds = false;
-                addedCells = outwardDirection.X != 0
-                    ? LoadVerticalEdge(unloadedPosition.X)
-                    : LoadHorizontalEdge(unloadedPosition.Y);
-                if (addedCells.Count == 0)
+                result.Add(candidate);
+                candidate += tangent;
+            }
+        }
+
+        private bool IsVoidBoundaryCell(GridPosition position, GridPosition outwardDirection)
+        {
+            GridPosition interior = position + new GridPosition(
+                -outwardDirection.X,
+                -outwardDirection.Y);
+            return !cellMap.IsLoaded(position)
+                && !cellMap.IsAuthoredWall(position)
+                && !cellMap.IsDynamicBlocker(position)
+                && cellMap.IsLoaded(interior);
+        }
+
+        private bool IsInsideTransverseBounds(
+            GridPosition position,
+            GridPosition outwardDirection)
+        {
+            return outwardDirection.X != 0
+                ? position.Y >= cellMap.MinY && position.Y <= cellMap.MaxY
+                : position.X >= cellMap.MinX && position.X <= cellMap.MaxX;
+        }
+
+        private bool CanShiftVoidLine(
+            IReadOnlyList<GridPosition> voidLine,
+            GridPosition outwardDirection)
+        {
+            for (int i = 0; i < voidLine.Count; i++)
+            {
+                GridPosition destination = voidLine[i] + outwardDirection;
+                if (cellMap.IsAuthoredWall(destination)
+                    || cellMap.IsDynamicBlocker(destination)
+                    || destination.Equals(playerPosition)
+                    || HasDoorAt(destination))
                 {
                     return false;
                 }
             }
 
-            RefreshCamera();
-            if (changedBounds)
+            return true;
+        }
+
+        private static List<DoorExit> FindDoorsOnLine(IReadOnlyList<GridPosition> voidLine)
+        {
+            DoorExit[] doors = FindObjectsByType<DoorExit>();
+            var result = new List<DoorExit>();
+            for (int i = 0; i < doors.Length; i++)
             {
-                BoundaryExpanded?.Invoke(outwardDirection, unloadedPosition);
+                if (doors[i].TouchesAny(voidLine))
+                {
+                    result.Add(doors[i]);
+                }
             }
 
-            int coordinate = outwardDirection.X != 0 ? unloadedPosition.X : unloadedPosition.Y;
-            boundaryGrowthLayers.Add(new BoundaryGrowthLayer(
-                outwardDirection,
-                coordinate,
-                addedCells,
-                changedBounds));
-            RestartBurpTimer();
-            Debug.Log($"The grid boundary ate the food and pushed {addedCells.Count} wall cell(s) outward.");
-            return true;
+            return result;
         }
 
         public void SetPlayerPosition(GridPosition position)
@@ -151,32 +210,32 @@ namespace OopsItAte.Grid
 
         public bool TryGetBoundaryDirection(GridPosition position, out GridPosition direction)
         {
-            if (loadedCells.Contains(position))
+            if (cellMap.IsLoaded(position))
             {
                 direction = default;
                 return false;
             }
 
-            if (position.X == minX - 1 && position.Y >= minY && position.Y <= maxY
-                && loadedCells.Contains(position + new GridPosition(1, 0)))
+            if (position.X == cellMap.MinX - 1 && position.Y >= cellMap.MinY && position.Y <= cellMap.MaxY
+                && cellMap.IsLoaded(position + new GridPosition(1, 0)))
             {
                 direction = new GridPosition(-1, 0);
                 return true;
             }
-            if (position.X == maxX + 1 && position.Y >= minY && position.Y <= maxY
-                && loadedCells.Contains(position + new GridPosition(-1, 0)))
+            if (position.X == cellMap.MaxX + 1 && position.Y >= cellMap.MinY && position.Y <= cellMap.MaxY
+                && cellMap.IsLoaded(position + new GridPosition(-1, 0)))
             {
                 direction = new GridPosition(1, 0);
                 return true;
             }
-            if (position.Y == minY - 1 && position.X >= minX && position.X <= maxX
-                && loadedCells.Contains(position + new GridPosition(0, 1)))
+            if (position.Y == cellMap.MinY - 1 && position.X >= cellMap.MinX && position.X <= cellMap.MaxX
+                && cellMap.IsLoaded(position + new GridPosition(0, 1)))
             {
                 direction = new GridPosition(0, -1);
                 return true;
             }
-            if (position.Y == maxY + 1 && position.X >= minX && position.X <= maxX
-                && loadedCells.Contains(position + new GridPosition(0, -1)))
+            if (position.Y == cellMap.MaxY + 1 && position.X >= cellMap.MinX && position.X <= cellMap.MaxX
+                && cellMap.IsLoaded(position + new GridPosition(0, -1)))
             {
                 direction = new GridPosition(0, 1);
                 return true;
@@ -193,7 +252,7 @@ namespace OopsItAte.Grid
             {
                 GridPosition candidate = directions[i];
                 GridPosition interior = position + new GridPosition(-candidate.X, -candidate.Y);
-                if (loadedCells.Contains(interior))
+                if (cellMap.IsLoaded(interior))
                 {
                     direction = candidate;
                     return true;
@@ -206,211 +265,73 @@ namespace OopsItAte.Grid
 
         public void AddDynamicBlocker(GridPosition position)
         {
-            dynamicBlockedCells.Add(position);
+            cellMap.AddDynamicBlocker(position);
         }
 
         public void RemoveDynamicBlocker(GridPosition position)
         {
-            dynamicBlockedCells.Remove(position);
+            cellMap.RemoveDynamicBlocker(position);
         }
 
-        private void BuildWalls(IEnumerable<GridPosition> levelWalls)
+        private void RefreshCell(GridPosition position)
         {
-            blockedCells.Clear();
-            authoredWalls.Clear();
-
-            if (levelWalls == null)
-            {
-                return;
-            }
-
-            foreach (GridPosition wall in levelWalls)
-            {
-                authoredWalls.Add(wall);
-                if (IsInsideCurrentBounds(wall))
-                {
-                    blockedCells.Add(wall);
-                }
-            }
-        }
-
-        private void BuildLoadedCells(IEnumerable<GridPosition> levelCells)
-        {
-            loadedCells.Clear();
-
-            if (levelCells != null)
-            {
-                foreach (GridPosition cell in levelCells)
-                {
-                    if (IsInsideCurrentBounds(cell))
-                    {
-                        loadedCells.Add(cell);
-                    }
-                }
-
-                return;
-            }
-
-            for (int y = minY; y <= maxY; y++)
-            {
-                for (int x = minX; x <= maxX; x++)
-                {
-                    loadedCells.Add(new GridPosition(x, y));
-                }
-            }
-        }
-
-        private void DrawGrid()
-        {
-            for (int y = minY; y <= maxY; y++)
-            {
-                for (int x = minX; x <= maxX; x++)
-                {
-                    var position = new GridPosition(x, y);
-                    if (!loadedCells.Contains(position))
-                    {
-                        continue;
-                    }
-
-                    bool isWall = blockedCells.Contains(position);
-                    CreateCell(position, isWall ? wallColor : floorColor, isWall ? "Wall" : "Floor");
-                }
-            }
-        }
-
-        private void CreateCell(GridPosition position, Color color, string label)
-        {
-            GameObject cell = GameObject.CreatePrimitive(PrimitiveType.Quad);
-            cell.name = $"{label} {position}";
-            cell.transform.SetParent(transform);
-            cell.transform.position = settings.GridToWorld(position);
-            cell.transform.localScale = Vector3.one * settings.cellSize * 0.92f;
-
-            var renderer = cell.GetComponent<MeshRenderer>();
-            renderer.material = new Material(FindUnlitShader());
-            renderer.material.color = color;
-            cellRenderers[position] = renderer;
-
-            Destroy(cell.GetComponent<Collider>());
-        }
-
-        private List<GridPosition> LoadVerticalEdge(int x)
-        {
-            var addedCells = new List<GridPosition>();
-            for (int y = minY; y <= maxY; y++)
-            {
-                GridPosition position = new GridPosition(x, y);
-                if (!loadedCells.Contains(position))
-                {
-                    addedCells.Add(position);
-                }
-
-                SetCell(position, authoredWalls.Contains(position));
-            }
-
-            return addedCells;
-        }
-
-        private List<GridPosition> LoadHorizontalEdge(int y)
-        {
-            var addedCells = new List<GridPosition>();
-            for (int x = minX; x <= maxX; x++)
-            {
-                GridPosition position = new GridPosition(x, y);
-                if (!loadedCells.Contains(position))
-                {
-                    addedCells.Add(position);
-                }
-
-                SetCell(position, authoredWalls.Contains(position));
-            }
-
-            return addedCells;
-        }
-
-        private void SetCell(GridPosition position, bool isWall)
-        {
-            loadedCells.Add(position);
-            if (isWall)
-            {
-                blockedCells.Add(position);
-            }
-            else
-            {
-                blockedCells.Remove(position);
-            }
-
-            if (!cellRenderers.TryGetValue(position, out MeshRenderer renderer))
-            {
-                CreateCell(position, isWall ? wallColor : floorColor, isWall ? "Wall" : "Floor");
-                return;
-            }
-
-            renderer.material.color = isWall ? wallColor : floorColor;
-            renderer.gameObject.name = $"{(isWall ? "Wall" : "Floor")} {position}";
+            cellView.SetCell(position, cellMap.IsAuthoredWall(position));
         }
 
         private void RemoveCell(GridPosition position)
         {
-            loadedCells.Remove(position);
-            blockedCells.Remove(position);
-            if (!cellRenderers.TryGetValue(position, out MeshRenderer renderer))
-            {
-                return;
-            }
-
-            Destroy(renderer.gameObject);
-            cellRenderers.Remove(position);
+            cellMap.RemoveCell(position);
+            cellView.RemoveCell(position);
         }
 
-        private void RestartBurpTimer()
+        private void RestartVoidBurpTimer()
         {
-            if (burpCoroutine != null)
+            if (voidBurpCoroutine != null)
             {
-                StopCoroutine(burpCoroutine);
+                StopCoroutine(voidBurpCoroutine);
             }
 
-            burpCoroutine = StartCoroutine(BurpBoundariesOverTime());
+            voidBurpCoroutine = StartCoroutine(BurpVoidsOverTime());
         }
 
-        private IEnumerator BurpBoundariesOverTime()
+        private IEnumerator BurpVoidsOverTime()
         {
-            while (boundaryGrowthLayers.Count > 0)
+            while (voidPushLayers.Count > 0)
             {
                 yield return new WaitForSeconds(3f);
 
-                BoundaryGrowthLayer layer = boundaryGrowthLayers[boundaryGrowthLayers.Count - 1];
-                while (!CanRemoveBoundaryLayer(layer))
+                VoidPushLayer layer = voidPushLayers[voidPushLayers.Count - 1];
+                while (!CanRestoreVoid(layer))
                 {
-                    TryPushBoundaryOccupants(layer);
+                    TryClearVoidCell(layer);
                     yield return new WaitForSeconds(0.25f);
                 }
 
-                RemoveBoundaryLayer(layer);
-                boundaryGrowthLayers.RemoveAt(boundaryGrowthLayers.Count - 1);
-                Debug.Log("The grid boundary burped and lost its latest expansion layer.");
+                RestoreVoid(layer);
+                voidPushLayers.RemoveAt(voidPushLayers.Count - 1);
+                Debug.Log("The grid burped and restored the latest empty-space cell.");
             }
 
-            burpCoroutine = null;
+            voidBurpCoroutine = null;
         }
 
-        private bool CanRemoveBoundaryLayer(BoundaryGrowthLayer layer)
+        private bool CanRestoreVoid(VoidPushLayer layer)
         {
             DoorExit[] doors = FindObjectsByType<DoorExit>();
             for (int i = 0; i < doors.Length; i++)
             {
-                if (doors[i].TouchesAny(layer.AddedCells))
+                if (doors[i].TouchesAny(layer.FilledCells))
                 {
                     return false;
                 }
             }
 
-            for (int i = 0; i < layer.AddedCells.Count; i++)
+            for (int i = 0; i < layer.FilledCells.Count; i++)
             {
-                GridPosition position = layer.AddedCells[i];
+                GridPosition position = layer.FilledCells[i];
                 if (position.Equals(playerPosition)
-                    || dynamicBlockedCells.Contains(position)
-                    || authoredWalls.Contains(position))
+                    || cellMap.IsDynamicBlocker(position)
+                    || cellMap.IsAuthoredWall(position))
                 {
                     return false;
                 }
@@ -419,17 +340,15 @@ namespace OopsItAte.Grid
             return true;
         }
 
-        private void TryPushBoundaryOccupants(BoundaryGrowthLayer layer)
+        private void TryClearVoidCell(VoidPushLayer layer)
         {
             GridPosition inwardDirection = new GridPosition(-layer.Direction.X, -layer.Direction.Y);
 
             GridMover[] movers = FindObjectsByType<GridMover>();
-            PushDoorsInward(layer, inwardDirection);
-            TryPushAuthoredWalls(layer, inwardDirection, movers);
             for (int i = 0; i < movers.Length; i++)
             {
                 GridMover mover = movers[i];
-                if (mover.World != this || !layer.AddedCells.Contains(mover.CurrentPosition))
+                if (mover.World != this || !layer.FilledCells.Contains(mover.CurrentPosition))
                 {
                     continue;
                 }
@@ -445,7 +364,7 @@ namespace OopsItAte.Grid
             for (int i = 0; i < boxes.Length; i++)
             {
                 PushableBox box = boxes[i];
-                if (box.IsPushable && layer.AddedCells.Contains(box.Position))
+                if (box.IsPushable && layer.FilledCells.Contains(box.Position))
                 {
                     if (!TryPushPlayerAt(box.Position + inwardDirection, inwardDirection, movers))
                     {
@@ -460,7 +379,7 @@ namespace OopsItAte.Grid
             for (int i = 0; i < bodies.Length; i++)
             {
                 PetBody body = bodies[i];
-                if (TouchesBoundaryLayer(body, layer))
+                if (TouchesAny(body, layer.FilledCells))
                 {
                     if (body.WouldOccupyAfterShift(playerPosition, inwardDirection)
                         && !TryPushPlayerAt(playerPosition, inwardDirection, movers))
@@ -471,70 +390,6 @@ namespace OopsItAte.Grid
                     body.TryShift(inwardDirection);
                 }
             }
-        }
-
-        private static void PushDoorsInward(
-            BoundaryGrowthLayer layer,
-            GridPosition inwardDirection)
-        {
-            DoorExit[] doors = FindObjectsByType<DoorExit>();
-            for (int i = 0; i < doors.Length; i++)
-            {
-                if (doors[i].TouchesAny(layer.AddedCells))
-                {
-                    doors[i].Shift(inwardDirection);
-                }
-            }
-        }
-
-        private void TryPushAuthoredWalls(
-            BoundaryGrowthLayer layer,
-            GridPosition inwardDirection,
-            GridMover[] movers)
-        {
-            for (int i = 0; i < layer.AddedCells.Count; i++)
-            {
-                GridPosition source = layer.AddedCells[i];
-                if (!authoredWalls.Contains(source))
-                {
-                    continue;
-                }
-
-                GridPosition target = source + inwardDirection;
-                if (target.Equals(playerPosition)
-                    && !TryPushPlayerAt(target, inwardDirection, movers))
-                {
-                    continue;
-                }
-
-                if (!loadedCells.Contains(target)
-                    || authoredWalls.Contains(target)
-                    || dynamicBlockedCells.Contains(target))
-                {
-                    continue;
-                }
-
-                authoredWalls.Remove(source);
-                blockedCells.Remove(source);
-                SetCell(source, false);
-
-                authoredWalls.Add(target);
-                blockedCells.Add(target);
-                SetCell(target, true);
-            }
-        }
-
-        private static bool TouchesBoundaryLayer(PetBody body, BoundaryGrowthLayer layer)
-        {
-            for (int i = 0; i < layer.AddedCells.Count; i++)
-            {
-                if (body.Contains(layer.AddedCells[i]))
-                {
-                    return true;
-                }
-            }
-
-            return false;
         }
 
         private bool TryPushPlayerAt(
@@ -563,51 +418,64 @@ namespace OopsItAte.Grid
             return true;
         }
 
-        private void RemoveBoundaryLayer(BoundaryGrowthLayer layer)
+        private static bool TouchesAny(PetBody body, IReadOnlyList<GridPosition> positions)
         {
-            for (int i = 0; i < layer.AddedCells.Count; i++)
+            for (int i = 0; i < positions.Count; i++)
             {
-                RemoveCell(layer.AddedCells[i]);
+                if (body.Contains(positions[i]))
+                {
+                    return true;
+                }
             }
 
-            if (layer.ChangedBounds)
-            {
-                if (layer.Direction.X < 0)
-                {
-                    minX++;
-                }
-                else if (layer.Direction.X > 0)
-                {
-                    maxX--;
-                }
-                else if (layer.Direction.Y < 0)
-                {
-                    minY++;
-                }
-                else
-                {
-                    maxY--;
-                }
+            return false;
+        }
 
-                GridPosition inwardDirection = new GridPosition(-layer.Direction.X, -layer.Direction.Y);
-                GridPosition previousDoorBoundary = layer.Direction.X != 0
-                    ? new GridPosition(layer.Coordinate + layer.Direction.X, 0)
-                    : new GridPosition(0, layer.Coordinate + layer.Direction.Y);
-                BoundaryExpanded?.Invoke(inwardDirection, previousDoorBoundary);
+        private void RestoreVoid(VoidPushLayer layer)
+        {
+            GridPosition inwardDirection = new GridPosition(
+                -layer.Direction.X,
+                -layer.Direction.Y);
+            for (int i = 0; i < layer.MovedDoors.Count; i++)
+            {
+                if (layer.MovedDoors[i] != null)
+                {
+                    layer.MovedDoors[i].Shift(inwardDirection);
+                }
+            }
+
+            for (int i = 0; i < layer.FilledCells.Count; i++)
+            {
+                RemoveCell(layer.FilledCells[i]);
+            }
+
+            for (int i = 0; i < layer.EmptiedCells.Count; i++)
+            {
+                GridPosition position = layer.EmptiedCells[i];
+                cellMap.LoadCell(position);
+                RefreshCell(position);
             }
 
             RefreshCamera();
         }
 
+        private static bool HasDoorAt(GridPosition position)
+        {
+            DoorExit[] doors = FindObjectsByType<DoorExit>();
+            for (int i = 0; i < doors.Length; i++)
+            {
+                if (doors[i].Contains(position))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static bool IsCardinalDirection(GridPosition direction)
         {
             return Mathf.Abs(direction.X) + Mathf.Abs(direction.Y) == 1;
-        }
-
-        private bool IsInsideCurrentBounds(GridPosition position)
-        {
-            return position.X >= minX && position.X <= maxX
-                && position.Y >= minY && position.Y <= maxY;
         }
 
         private void RefreshCamera()
@@ -618,18 +486,14 @@ namespace OopsItAte.Grid
                 return;
             }
 
+            cellMap.GetLoadedBounds(out int minX, out int maxX, out int minY, out int maxY);
             Vector3 min = settings.GridToWorld(new GridPosition(minX, minY));
             Vector3 max = settings.GridToWorld(new GridPosition(maxX, maxY));
             Vector3 center = (min + max) * 0.5f;
             camera.transform.position = new Vector3(center.x, center.y, camera.transform.position.z);
-            camera.orthographicSize = Mathf.Max(maxX - minX + 1, maxY - minY + 1) * 0.65f;
-        }
-
-        private static Shader FindUnlitShader()
-        {
-            return Shader.Find("Universal Render Pipeline/Unlit")
-                ?? Shader.Find("Unlit/Color")
-                ?? Shader.Find("Sprites/Default");
+            camera.orthographicSize = Mathf.Max(
+                maxX - minX + 1,
+                maxY - minY + 1) * 0.65f;
         }
     }
 }

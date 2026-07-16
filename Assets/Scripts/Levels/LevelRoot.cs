@@ -101,7 +101,7 @@ namespace OopsItAte.Levels
             kitchenObject.name = "Kitchen";
             kitchenObject.transform.SetParent(transform);
             kitchenObject.transform.position = world.Settings.GridToWorld(ToGridPosition(level.kitchenPosition)) + Vector3.back * 0.25f;
-            kitchenObject.transform.localScale = Vector3.one * world.Settings.cellSize * 0.72f;
+            kitchenObject.transform.localScale = Vector3.one * world.Settings.cellSize;
 
             var renderer = kitchenObject.GetComponent<MeshRenderer>();
             renderer.material = new Material(FindUnlitShader());

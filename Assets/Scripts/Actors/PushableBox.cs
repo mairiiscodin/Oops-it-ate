@@ -120,7 +120,7 @@ namespace OopsItAte.Actors
         private void SnapToGrid()
         {
             transform.position = world.Settings.GridToWorld(position) + Vector3.back * 0.75f;
-            transform.localScale = Vector3.one * world.Settings.cellSize * 0.72f;
+            transform.localScale = Vector3.one * world.Settings.cellSize;
         }
 
         private void AddBlocker()
@@ -175,7 +175,7 @@ namespace OopsItAte.Actors
         private void OnDrawGizmos()
         {
             Gizmos.color = color;
-            Gizmos.DrawCube(transform.position, Vector3.one * 0.72f);
+            Gizmos.DrawCube(transform.position, Vector3.one);
         }
     }
 }

@@ -16,7 +16,7 @@ namespace OopsItAte.Interaction
         public void Initialize(GridWorld world, GridPosition gridPosition)
         {
             position = gridPosition;
-            transform.localScale = Vector3.one * world.Settings.cellSize * 0.72f;
+            transform.localScale = Vector3.one * world.Settings.cellSize;
 
             var renderer = GetComponent<MeshRenderer>();
             if (renderer == null)
@@ -66,7 +66,7 @@ namespace OopsItAte.Interaction
         private void OnDrawGizmos()
         {
             Gizmos.color = color;
-            Gizmos.DrawCube(transform.position, Vector3.one * 0.72f);
+            Gizmos.DrawCube(transform.position, Vector3.one);
         }
     }
 }

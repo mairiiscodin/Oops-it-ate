@@ -699,7 +699,7 @@ namespace OopsItAte.Actors
                 visual.name = $"{bodyName} Body {cell}";
                 visual.transform.SetParent(transform);
                 visual.transform.position = world.Settings.GridToWorld(cell) + Vector3.back * 0.5f;
-                visual.transform.localScale = Vector3.one * world.Settings.cellSize * 0.88f;
+                visual.transform.localScale = Vector3.one * world.Settings.cellSize;
                 visual.GetComponent<MeshRenderer>().sharedMaterial = bodyMaterial;
                 Destroy(visual.GetComponent<Collider>());
                 visuals.Add(cell, visual);
@@ -749,7 +749,7 @@ namespace OopsItAte.Actors
                 GameObject visual = new GameObject($"{bodyName} Body {cell}");
                 visual.transform.SetParent(transform);
 
-                float targetSize = world.Settings.cellSize * 0.88f;
+                float targetSize = world.Settings.cellSize;
                 float spriteSize = Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y);
                 float scale = spriteSize > 0f ? targetSize / spriteSize : 1f;
                 visual.transform.localScale = Vector3.one * scale;
@@ -805,7 +805,7 @@ namespace OopsItAte.Actors
                 scaleReference.bounds.size.x,
                 scaleReference.bounds.size.y);
             float scale = referenceSize > 0f
-                ? world.Settings.cellSize * 0.88f / referenceSize
+                ? world.Settings.cellSize / referenceSize
                 : 1f;
             bigPetFaceVisual.transform.localScale = Vector3.one * scale;
             bigPetFaceVisual.transform.position = rectangleCenter
@@ -1034,7 +1034,7 @@ namespace OopsItAte.Actors
         private void OnDrawGizmos()
         {
             Gizmos.color = color;
-            Gizmos.DrawCube(transform.position, Vector3.one * 0.72f);
+            Gizmos.DrawCube(transform.position, Vector3.one);
         }
     }
 }

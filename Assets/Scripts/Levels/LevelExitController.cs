@@ -11,26 +11,13 @@ namespace OopsItAte.Levels
         [SerializeField] private DoorExit[] doors;
         private bool isLoadingScene;
 
-        private GridWorld world;
-
         public void Initialize(DoorExit[] sceneDoors, GridWorld gridWorld)
         {
             doors = sceneDoors;
-            world = gridWorld;
 
             for (int i = 0; i < doors.Length; i++)
             {
-                doors[i].Initialize(world);
-            }
-
-            world.BoundaryExpanded += MoveDoorsWithBoundary;
-        }
-
-        private void MoveDoorsWithBoundary(GridPosition direction, GridPosition previousBoundaryPosition)
-        {
-            for (int i = 0; i < doors.Length; i++)
-            {
-                doors[i].MoveWithBoundary(direction, previousBoundaryPosition);
+                doors[i].Initialize(gridWorld);
             }
         }
 
@@ -94,14 +81,6 @@ namespace OopsItAte.Levels
                 pendingSourceSceneName = SceneManager.GetActiveScene().name;
                 SceneManager.LoadScene(door.TargetSceneName);
                 return;
-            }
-        }
-
-        private void OnDestroy()
-        {
-            if (world != null)
-            {
-                world.BoundaryExpanded -= MoveDoorsWithBoundary;
             }
         }
     }

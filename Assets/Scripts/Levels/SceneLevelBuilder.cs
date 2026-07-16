@@ -216,10 +216,10 @@ namespace OopsItAte.Levels
                         : checker
                             ? new Color(0.18f, 0.22f, 0.25f, 0.24f)
                             : new Color(0.23f, 0.27f, 0.3f, 0.24f);
-                    Gizmos.DrawCube(center, cellSize * 0.92f);
+                    Gizmos.DrawCube(center, cellSize);
 
                     Gizmos.color = new Color(0.9f, 0.95f, 1f, 0.28f);
-                    Gizmos.DrawWireCube(center, cellSize * 0.92f);
+                    Gizmos.DrawWireCube(center, cellSize);
                 }
             }
 

@@ -55,7 +55,7 @@ namespace OopsItAte.Interaction
             }
 
             if (inventory.HasFood
-                && player.World.TryExpandBoundary(targetPosition, player.FacingDirection))
+                && player.World.TryPushVoid(targetPosition, player.FacingDirection))
             {
                 inventory.TryUseFood();
                 return;
