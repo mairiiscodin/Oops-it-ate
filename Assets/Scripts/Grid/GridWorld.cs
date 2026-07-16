@@ -75,12 +75,44 @@ namespace OopsItAte.Grid
 
         public bool CanEnter(GridPosition position)
         {
-            return cellMap.CanEnter(position);
+            return cellMap.CanEnter(position)
+                && !HasBodyAt(position)
+                && !HasBoxAt(position);
         }
 
         public bool IsBlocked(GridPosition position)
         {
             return cellMap.IsBlocked(position);
+        }
+
+        private bool HasBodyAt(GridPosition position)
+        {
+            PetBody[] bodies = FindObjectsByType<PetBody>();
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (bodies[i].Contains(position))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private bool HasBoxAt(GridPosition position)
+        {
+            PushableBox[] boxes = FindObjectsByType<PushableBox>();
+            for (int i = 0; i < boxes.Length; i++)
+            {
+                if (boxes[i].IsInitialized
+                    && boxes[i].GrowableBody == null
+                    && boxes[i].Position.Equals(position))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public bool TryPushBorder(GridPosition borderPosition, GridPosition outwardDirection)

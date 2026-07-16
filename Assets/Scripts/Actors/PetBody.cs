@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Collections;
 using OopsItAte.Grid;
+using OopsItAte.Interaction;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Serialization;
@@ -27,6 +28,7 @@ namespace OopsItAte.Actors
         [SerializeField] private Color color = new Color(0.25f, 0.9f, 0.35f);
         [SerializeField] private GridPosition origin;
         [SerializeField] private string bodyName = "Pet";
+        [SerializeField] private bool canBePushedByBodyGrowth = true;
         [Tooltip("Visual shown while this body occupies exactly one cell (for example DogVisual or OvenVisual).")]
         [FormerlySerializedAs("normalDogVisual")]
         [SerializeField] private GameObject normalVisual;
@@ -70,6 +72,13 @@ namespace OopsItAte.Actors
         private Coroutine burpCoroutine;
         private GameObject bigPetFaceVisual;
 
+        public bool CanBePushedByBodyGrowth => canBePushedByBodyGrowth;
+
+        public void SetCanBePushedByBodyGrowth(bool canBePushed)
+        {
+            canBePushedByBodyGrowth = canBePushed;
+        }
+
         public void Initialize(GridWorld gridWorld, GridPosition startPosition)
         {
             Initialize(gridWorld, startPosition, color, bodyName);
@@ -86,6 +95,7 @@ namespace OopsItAte.Actors
             bodyCells.Add(origin);
             growthLayers.Clear();
             StopBurpTimer();
+            SyncAttachedGridObject();
             Redraw();
         }
 
@@ -170,6 +180,7 @@ namespace OopsItAte.Actors
                 Destroy(visual);
             }
             visuals.Clear();
+            SyncAttachedGridObject();
             Redraw();
             return true;
         }
@@ -309,7 +320,6 @@ namespace OopsItAte.Actors
 
                         growthCellSet.Remove(playerPosition);
                         growthCells.Remove(playerPosition);
-                        RemoveGrowthBesidePlayer(playerPosition, growthCells, growthCellSet);
                         pushDirection = default;
                     }
                     else
@@ -398,6 +408,12 @@ namespace OopsItAte.Actors
             HashSet<GridPosition> occupiedPositions,
             out GridPosition pushDirection)
         {
+            if (!body.CanBePushedByBodyGrowth)
+            {
+                pushDirection = default;
+                return false;
+            }
+
             GridPosition[] directions =
             {
                 preferredDirection,
@@ -456,27 +472,6 @@ namespace OopsItAte.Actors
                 && !world.IsBlocked(horizontalSide)
                 && !world.IsBlocked(verticalSide);
         }
-
-        private static void RemoveGrowthBesidePlayer(
-            GridPosition playerPosition,
-            List<GridPosition> growthCells,
-            HashSet<GridPosition> growthCellSet)
-        {
-            for (int i = growthCells.Count - 1; i >= 0; i--)
-            {
-                GridPosition cell = growthCells[i];
-                int distance = Mathf.Abs(cell.X - playerPosition.X)
-                    + Mathf.Abs(cell.Y - playerPosition.Y);
-                if (distance != 1)
-                {
-                    continue;
-                }
-
-                growthCells.RemoveAt(i);
-                growthCellSet.Remove(cell);
-            }
-        }
-
 
         public bool TryGrow(IReadOnlyList<GridPosition> growthCells)
         {
@@ -944,6 +939,21 @@ namespace OopsItAte.Actors
             };
 
             return selected != null ? selected : bigDogSide;
+        }
+
+        private void SyncAttachedGridObject()
+        {
+            KitchenStation station = GetComponent<KitchenStation>();
+            if (station != null)
+            {
+                station.SyncBodyPosition(world, origin);
+                return;
+            }
+
+            if (world != null)
+            {
+                transform.position = world.Settings.GridToWorld(origin) + Vector3.back * 0.5f;
+            }
         }
 
         private void FindNormalVisual()

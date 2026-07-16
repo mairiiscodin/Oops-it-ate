@@ -39,6 +39,13 @@ namespace OopsItAte.Interaction
                 growableBody = gameObject.AddComponent<PetBody>();
             }
             growableBody.Initialize(world, position, color, "Kitchen");
+            growableBody.SetCanBePushedByBodyGrowth(true);
+        }
+
+        internal void SyncBodyPosition(GridWorld world, GridPosition gridPosition)
+        {
+            position = gridPosition;
+            transform.position = world.Settings.GridToWorld(position) + Vector3.back * 0.25f;
         }
 
         private static Mesh CreateQuadMesh()

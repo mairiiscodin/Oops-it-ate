@@ -70,6 +70,6 @@ Interact with `J`:
 - If an expanding cell reaches the player, the player is pushed to an available adjacent cell.
 - Growth pushes both normal boxes and the complete multi-cell body of boxes that have already been fed; failed moves are rolled back before growth continues.
 - If the player cannot be pushed away, growth still fills every valid edge cell except the cell occupied by the player.
-- When the player cannot be pushed, growth leaves the player's cell and its corner-adjacent edge cells empty.
+- When the player cannot be pushed, growth leaves only the player's occupied cell empty.
 - Every 3 seconds, a pet larger than `1x1` burps and loses its latest growth layer (for example, `5x5` becomes `3x3`).
 - If the pet cannot grow, it burps and shrinks straight back to `1x1`.
