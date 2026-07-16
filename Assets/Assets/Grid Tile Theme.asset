@@ -1,0 +1,32 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 63382440bcb84dd197ddf972119e2d3f, type: 3}
+  m_Name: Grid Tile Theme
+  m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Grid.GridTileTheme
+  floor: {fileID: 2191879436606075734, guid: fedd3cd52a9007e46860cf43de53c81a, type: 3}
+  wall: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderIsolated: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderNorth: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderEast: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderSouth: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderWest: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderNorthEast: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderEastSouth: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderSouthWest: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderWestNorth: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderNorthSouth: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderEastWest: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderNorthEastSouth: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderEastSouthWest: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderNorthSouthWest: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderNorthEastWest: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderAllSides: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}

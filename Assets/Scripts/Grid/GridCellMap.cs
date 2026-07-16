@@ -6,6 +6,7 @@ namespace OopsItAte.Grid
     {
         private readonly HashSet<GridPosition> loadedCells = new HashSet<GridPosition>();
         private readonly HashSet<GridPosition> authoredWalls = new HashSet<GridPosition>();
+        private readonly HashSet<GridPosition> borderCells = new HashSet<GridPosition>();
         private readonly HashSet<GridPosition> dynamicBlockers = new HashSet<GridPosition>();
 
         public int MinX { get; private set; }
@@ -13,12 +14,14 @@ namespace OopsItAte.Grid
         public int MinY { get; private set; }
         public int MaxY { get; private set; }
         public IEnumerable<GridPosition> LoadedCells => loadedCells;
+        public IEnumerable<GridPosition> BorderCells => borderCells;
 
         public void Initialize(
             int width,
             int height,
             IEnumerable<GridPosition> levelWalls,
-            IEnumerable<GridPosition> levelCells)
+            IEnumerable<GridPosition> levelCells,
+            IEnumerable<GridPosition> levelBorders)
         {
             MinX = 0;
             MaxX = width - 1;
@@ -27,10 +30,13 @@ namespace OopsItAte.Grid
 
             loadedCells.Clear();
             authoredWalls.Clear();
+            borderCells.Clear();
             dynamicBlockers.Clear();
 
             BuildLoadedCells(levelCells);
             BuildWalls(levelWalls);
+            BuildBorders(levelBorders);
+            BuildDefaultOuterBorder();
         }
 
         public bool CanEnter(GridPosition position)
@@ -45,6 +51,7 @@ namespace OopsItAte.Grid
 
         public bool IsLoaded(GridPosition position) => loadedCells.Contains(position);
         public bool IsAuthoredWall(GridPosition position) => authoredWalls.Contains(position);
+        public bool IsBorder(GridPosition position) => borderCells.Contains(position);
         public bool IsDynamicBlocker(GridPosition position) => dynamicBlockers.Contains(position);
 
         public void AddDynamicBlocker(GridPosition position) => dynamicBlockers.Add(position);
@@ -54,6 +61,9 @@ namespace OopsItAte.Grid
         {
             return loadedCells.Add(position);
         }
+
+        public void AddBorder(GridPosition position) => borderCells.Add(position);
+        public void RemoveBorder(GridPosition position) => borderCells.Remove(position);
 
         public void GetLoadedBounds(out int minX, out int maxX, out int minY, out int maxY)
         {
@@ -70,7 +80,15 @@ namespace OopsItAte.Grid
                 if (position.Y > maxY) maxY = position.Y;
             }
 
-            if (loadedCells.Count == 0)
+            foreach (GridPosition position in borderCells)
+            {
+                if (position.X < minX) minX = position.X;
+                if (position.X > maxX) maxX = position.X;
+                if (position.Y < minY) minY = position.Y;
+                if (position.Y > maxY) maxY = position.Y;
+            }
+
+            if (loadedCells.Count == 0 && borderCells.Count == 0)
             {
                 minX = maxX = minY = maxY = 0;
             }
@@ -115,6 +133,39 @@ namespace OopsItAte.Grid
             foreach (GridPosition wall in levelWalls)
             {
                 authoredWalls.Add(wall);
+            }
+        }
+
+        private void BuildBorders(IEnumerable<GridPosition> levelBorders)
+        {
+            if (levelBorders == null)
+            {
+                return;
+            }
+
+            foreach (GridPosition border in levelBorders)
+            {
+                borderCells.Add(border);
+            }
+        }
+
+        private void BuildDefaultOuterBorder()
+        {
+            int left = MinX - 1;
+            int right = MaxX + 1;
+            int bottom = MinY - 1;
+            int top = MaxY + 1;
+
+            for (int y = bottom; y <= top; y++)
+            {
+                borderCells.Add(new GridPosition(left, y));
+                borderCells.Add(new GridPosition(right, y));
+            }
+
+            for (int x = MinX; x <= MaxX; x++)
+            {
+                borderCells.Add(new GridPosition(x, bottom));
+                borderCells.Add(new GridPosition(x, top));
             }
         }
 

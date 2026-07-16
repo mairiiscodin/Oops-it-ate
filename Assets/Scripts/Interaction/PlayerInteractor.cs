@@ -48,14 +48,17 @@ namespace OopsItAte.Interaction
                 return;
             }
 
-            if (inventory.HasFood && TryFeedDoorAt(targetPosition))
+            // A door can be mounted on a pushable '_' border. Let the border
+            // interaction move that whole line (and its door) before treating
+            // the same cell as a normal door feeding interaction.
+            if (inventory.HasFood
+                && player.World.TryPushBorder(targetPosition, player.FacingDirection))
             {
                 inventory.TryUseFood();
                 return;
             }
 
-            if (inventory.HasFood
-                && player.World.TryPushVoid(targetPosition, player.FacingDirection))
+            if (inventory.HasFood && TryFeedDoorAt(targetPosition))
             {
                 inventory.TryUseFood();
                 return;

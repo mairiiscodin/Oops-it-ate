@@ -7,17 +7,20 @@ namespace OopsItAte.Levels
     public sealed class LevelSceneSettings : MonoBehaviour
     {
         public GridSettings grid = new GridSettings();
+        public GridTileTheme tileTheme;
 
-        [Tooltip("Optional tile-shaped map. Use '.' for floor, '#' for wall, and spaces (or '_') for empty space outside the map. The first line is the top row. Leave empty to use the full rectangular grid.")]
+        [Tooltip("Optional tile-shaped map. Use '.' for floor, '#' for solid wall, '_' for a pushable border wall, and spaces for invisible space outside the map. The first line is the top row.")]
         [TextArea(6, 20)]
         public string tileMap = string.Empty;
 
         public bool TryReadTileMap(
             out HashSet<GridPosition> mapCells,
-            out HashSet<GridPosition> wallCells)
+            out HashSet<GridPosition> wallCells,
+            out HashSet<GridPosition> borderCells)
         {
             mapCells = new HashSet<GridPosition>();
             wallCells = new HashSet<GridPosition>();
+            borderCells = new HashSet<GridPosition>();
 
             string[] rows = GetRows();
             if (rows.Length == 0)
@@ -38,6 +41,12 @@ namespace OopsItAte.Levels
                 for (int x = 0; x < rows[row].Length; x++)
                 {
                     char tile = rows[row][x];
+                    if (tile == '_')
+                    {
+                        borderCells.Add(new GridPosition(x, y));
+                        continue;
+                    }
+
                     if (tile != '.' && tile != '#')
                     {
                         continue;

@@ -32,6 +32,7 @@ namespace OopsItAte.Editor
 
             var walls = new System.Collections.Generic.List<Vector2Int>();
             var cells = new System.Collections.Generic.List<Vector2Int>();
+            var borders = new System.Collections.Generic.List<Vector2Int>();
 
             for (int row = 0; row < rawRows.Length; row++)
             {
@@ -51,6 +52,10 @@ namespace OopsItAte.Editor
                     else if (tile == '.' || tile == 'S' || tile == 'K' || tile == 'P')
                     {
                         cells.Add(position);
+                    }
+                    else if (tile == '_')
+                    {
+                        borders.Add(position);
                     }
 
                     if (tile == 'S')
@@ -72,6 +77,7 @@ namespace OopsItAte.Editor
             level.grid.height = height;
             level.wallCells = walls.ToArray();
             level.mapCells = cells.ToArray();
+            level.borderCells = borders.ToArray();
             EditorUtility.SetDirty(level);
         }
     }

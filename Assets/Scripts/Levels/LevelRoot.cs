@@ -49,7 +49,12 @@ namespace OopsItAte.Levels
             gridObject.transform.SetParent(transform);
 
             var world = gridObject.AddComponent<GridWorld>();
-            world.Initialize(level.grid, GetWallPositions(), GetMapPositions());
+            world.Initialize(
+                level.grid,
+                GetWallPositions(),
+                GetMapPositions(),
+                GetBorderPositions(),
+                level.tileTheme);
             return world;
         }
 
@@ -74,6 +79,14 @@ namespace OopsItAte.Levels
             for (int i = 0; i < level.wallCells.Length; i++)
             {
                 yield return ToGridPosition(level.wallCells[i]);
+            }
+        }
+
+        private IEnumerable<GridPosition> GetBorderPositions()
+        {
+            for (int i = 0; i < level.borderCells.Length; i++)
+            {
+                yield return ToGridPosition(level.borderCells[i]);
             }
         }
 

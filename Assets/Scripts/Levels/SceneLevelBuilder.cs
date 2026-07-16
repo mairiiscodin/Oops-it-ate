@@ -88,18 +88,26 @@ namespace OopsItAte.Levels
             gridObject.transform.SetParent(transform);
 
             var world = gridObject.AddComponent<GridWorld>();
-            if (settings.TryReadTileMap(out HashSet<GridPosition> mapCells, out HashSet<GridPosition> tileWalls))
+            if (settings.TryReadTileMap(
+                out HashSet<GridPosition> mapCells,
+                out HashSet<GridPosition> tileWalls,
+                out HashSet<GridPosition> borderCells))
             {
                 foreach (GridPosition wall in GetWallPositions())
                 {
                     tileWalls.Add(wall);
                 }
 
-                world.Initialize(settings.grid, tileWalls, mapCells);
+                world.Initialize(
+                    settings.grid,
+                    tileWalls,
+                    mapCells,
+                    borderCells,
+                    settings.tileTheme);
             }
             else
             {
-                world.Initialize(settings.grid, GetWallPositions());
+                world.Initialize(settings.grid, GetWallPositions(), null, null, settings.tileTheme);
             }
 
             return world;
@@ -197,21 +205,26 @@ namespace OopsItAte.Levels
             Vector3 cellSize = Vector3.one * grid.cellSize;
             bool hasTileMap = sceneSettings.TryReadTileMap(
                 out HashSet<GridPosition> mapCells,
-                out HashSet<GridPosition> wallCells);
+                out HashSet<GridPosition> wallCells,
+                out HashSet<GridPosition> borderCells);
 
             for (int y = 0; y < grid.height; y++)
             {
                 for (int x = 0; x < grid.width; x++)
                 {
                     var position = new GridPosition(x, y);
-                    if (hasTileMap && !mapCells.Contains(position))
+                    if (hasTileMap
+                        && !mapCells.Contains(position)
+                        && !borderCells.Contains(position))
                     {
                         continue;
                     }
 
                     Vector3 center = grid.GridToWorld(position) + Vector3.forward * 0.05f;
                     bool checker = (x + y) % 2 == 0;
-                    Gizmos.color = hasTileMap && wallCells.Contains(position)
+                    Gizmos.color = hasTileMap && borderCells.Contains(position)
+                        ? new Color(0.75f, 0.25f, 0.25f, 0.7f)
+                        : hasTileMap && wallCells.Contains(position)
                         ? new Color(0.45f, 0.45f, 0.45f, 0.55f)
                         : checker
                             ? new Color(0.18f, 0.22f, 0.25f, 0.24f)

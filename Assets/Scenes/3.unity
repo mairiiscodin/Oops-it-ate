@@ -592,6 +592,7 @@ MonoBehaviour:
     width: 9
     height: 7
     cellSize: 1
+  tileTheme: {fileID: 11400000, guid: a27acbcae90c4595a21274c2c08ef024, type: 2}
   tileMap: '....._...
 
     ....._...
