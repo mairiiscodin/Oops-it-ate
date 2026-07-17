@@ -19,14 +19,14 @@ MonoBehaviour:
   borderEast: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
   borderSouth: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
   borderWest: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
-  borderNorthEast: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderNorthEast: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
   borderEastSouth: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
   borderSouthWest: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
-  borderWestNorth: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderWestNorth: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
   borderNorthSouth: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
-  borderEastWest: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
-  borderNorthEastSouth: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
-  borderEastSouthWest: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
-  borderNorthSouthWest: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
-  borderNorthEastWest: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderEastWest: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}
+  borderNorthEastSouth: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderEastSouthWest: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderNorthSouthWest: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
+  borderNorthEastWest: {fileID: -7682714801666652347, guid: 3fffbd79cd3cb37478cbff3e451a2b03, type: 3}
   borderAllSides: {fileID: -7384424590614482496, guid: 4278b6174df453f409c76649d579d29d, type: 3}

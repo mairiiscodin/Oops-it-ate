@@ -300,7 +300,7 @@ namespace OopsItAte.Actors
                 if (playerWillBeCovered)
                 {
                     preferredPushDirections.TryGetValue(playerPosition, out GridPosition preferredPlayerDirection);
-                    shouldPushPlayer = TryFindPushDirection(
+                    shouldPushPlayer = TryFindOutwardPushDirection(
                         playerPosition,
                         preferredPlayerDirection,
                         bodyCells,
@@ -377,12 +377,8 @@ namespace OopsItAte.Actors
                         occupiedPositions,
                         out GridPosition bodyPushDirection))
                     {
-                        growthCells.Clear();
-                        boxMoves.Clear();
-                        bodyMoves.Clear();
-                        shouldPushPlayer = false;
-                        pushDirection = default;
-                        return false;
+                        RemoveGrowthOccupiedByBody(otherBody, growthCells, growthCellSet);
+                        continue;
                     }
 
                     bodyMoves.Add(new PetBodyMove(otherBody, bodyPushDirection));
@@ -402,6 +398,18 @@ namespace OopsItAte.Actors
             }
         }
 
+        private static void RemoveGrowthOccupiedByBody(
+            PetBody body,
+            List<GridPosition> growthCells,
+            HashSet<GridPosition> growthCellSet)
+        {
+            foreach (GridPosition occupiedCell in body.bodyCells)
+            {
+                growthCellSet.Remove(occupiedCell);
+                growthCells.Remove(occupiedCell);
+            }
+        }
+
         private static bool TryFindBodyPushDirection(
             PetBody body,
             GridPosition preferredDirection,
@@ -414,23 +422,38 @@ namespace OopsItAte.Actors
                 return false;
             }
 
-            GridPosition[] directions =
+            if (!preferredDirection.Equals(default)
+                && body.CanShiftTo(preferredDirection, occupiedPositions))
             {
-                preferredDirection,
-                new GridPosition(-1, 0),
-                new GridPosition(0, -1),
-                new GridPosition(1, 0),
-                new GridPosition(0, 1)
-            };
+                pushDirection = preferredDirection;
+                return true;
+            }
 
-            for (int i = 0; i < directions.Length; i++)
+            pushDirection = default;
+            return false;
+        }
+
+        private static bool TryFindOutwardPushDirection(
+            GridPosition currentPosition,
+            GridPosition outwardDirection,
+            HashSet<GridPosition> currentBodyCells,
+            HashSet<GridPosition> growthCells,
+            Func<GridPosition, bool> canMoveTo,
+            out GridPosition pushDirection)
+        {
+            if (outwardDirection.Equals(default))
             {
-                GridPosition direction = directions[i];
-                if (!direction.Equals(default) && body.CanShiftTo(direction, occupiedPositions))
-                {
-                    pushDirection = direction;
-                    return true;
-                }
+                pushDirection = default;
+                return false;
+            }
+
+            GridPosition target = currentPosition + outwardDirection;
+            if (!currentBodyCells.Contains(target)
+                && !growthCells.Contains(target)
+                && canMoveTo(target))
+            {
+                pushDirection = outwardDirection;
+                return true;
             }
 
             pushDirection = default;

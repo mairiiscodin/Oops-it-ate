@@ -32,10 +32,10 @@ namespace OopsItAte.Interaction
         {
             GridPosition targetPosition = player.FacingPosition;
 
-            if (!inventory.HasFood
-                && kitchen != null
+            if (kitchen != null
                 && kitchen.GrowableBody != null
-                && kitchen.GrowableBody.Contains(targetPosition))
+                && kitchen.GrowableBody.Contains(targetPosition)
+                && !inventory.HasFood)
             {
                 inventory.TryTakeFood();
                 return;
