@@ -14,6 +14,11 @@ namespace OopsItAte.Levels
         public string TargetSceneName => targetSceneName;
         public GridPosition Position => position;
 
+        public void SetTargetScene(string sceneName)
+        {
+            targetSceneName = sceneName == null ? string.Empty : sceneName.Trim();
+        }
+
         public bool TryGetInteriorPosition(out GridPosition interiorPosition)
         {
             if (!boundaryDirection.Equals(default))

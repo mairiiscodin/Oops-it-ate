@@ -1,4 +1,5 @@
 using OopsItAte.Grid;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,12 +7,72 @@ namespace OopsItAte.Levels
 {
     public sealed class LevelSceneSettings : MonoBehaviour
     {
+        [Serializable]
+        public sealed class DoorLink
+        {
+            [Tooltip("Door marker used in the tile map (1-9).")]
+            [Range(1, 9)] public int marker = 1;
+
+            [Tooltip("Scene path selected by the level editor.")]
+            public string targetScenePath = string.Empty;
+
+            public char Marker => (char)('0' + Mathf.Clamp(marker, 1, 9));
+
+            public string TargetSceneName
+            {
+                get
+                {
+                    if (string.IsNullOrWhiteSpace(targetScenePath))
+                    {
+                        return string.Empty;
+                    }
+
+                    string normalized = targetScenePath.Replace('\\', '/');
+                    int slash = normalized.LastIndexOf('/');
+                    int dot = normalized.LastIndexOf('.');
+                    int start = slash + 1;
+                    int length = dot > start ? dot - start : normalized.Length - start;
+                    return normalized.Substring(start, length);
+                }
+            }
+        }
+
         public GridSettings grid = new GridSettings();
         public GridTileTheme tileTheme;
 
-        [Tooltip("Optional tile-shaped map. Use '.' for floor, '#' for solid wall, '_' for a pushable border wall, and spaces for invisible space outside the map. The first line is the top row.")]
+        [Tooltip("Use '.', '#', '_', S, K, P, B and 1-9. The first line is the top row.")]
         [TextArea(6, 20)]
         public string tileMap = string.Empty;
+
+        [Tooltip("Target scene for each numbered door marker in the tile map.")]
+        public DoorLink[] doorLinks = Array.Empty<DoorLink>();
+
+        public string[] GetRows()
+        {
+            return ReadRows();
+        }
+
+        public bool TryGetDoorTarget(char marker, out string targetSceneName)
+        {
+            if (doorLinks == null)
+            {
+                targetSceneName = string.Empty;
+                return false;
+            }
+
+            for (int i = 0; i < doorLinks.Length; i++)
+            {
+                DoorLink link = doorLinks[i];
+                if (link != null && link.Marker == marker)
+                {
+                    targetSceneName = link.TargetSceneName;
+                    return !string.IsNullOrWhiteSpace(targetSceneName);
+                }
+            }
+
+            targetSceneName = string.Empty;
+            return false;
+        }
 
         public bool TryReadTileMap(
             out HashSet<GridPosition> mapCells,
@@ -22,7 +83,7 @@ namespace OopsItAte.Levels
             wallCells = new HashSet<GridPosition>();
             borderCells = new HashSet<GridPosition>();
 
-            string[] rows = GetRows();
+            string[] rows = ReadRows();
             if (rows.Length == 0)
             {
                 return false;
@@ -41,13 +102,14 @@ namespace OopsItAte.Levels
                 for (int x = 0; x < rows[row].Length; x++)
                 {
                     char tile = rows[row][x];
-                    if (tile == '_')
+                    if (tile == '_' || char.IsDigit(tile))
                     {
                         borderCells.Add(new GridPosition(x, y));
                         continue;
                     }
 
-                    if (tile != '.' && tile != '#')
+                    if (tile != '.' && tile != '#'
+                        && tile != 'S' && tile != 'K' && tile != 'P' && tile != 'B')
                     {
                         continue;
                     }
@@ -71,7 +133,7 @@ namespace OopsItAte.Levels
             return true;
         }
 
-        private string[] GetRows()
+        private string[] ReadRows()
         {
             if (string.IsNullOrWhiteSpace(tileMap))
             {

@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 46408626}
   - component: {fileID: 46408625}
+  - component: {fileID: 46408627}
   m_Layer: 0
   m_Name: Pet
   m_TagString: Untagged
@@ -150,9 +151,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Actors.PetBody
   color: {r: 0.25, g: 0.9, b: 0.35, a: 1}
   bodyName: Pet
-  normalVisual: {fileID: -2253911629886400664, guid: f4960a1f34501b24593b1e23be220df3, type: 3}
+  canBePushedByBodyGrowth: 1
+  normalVisual: {fileID: 897665144}
   bigDogSide: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
-  bigDogFace: {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  bigDogOpen3ConnectedNorth: {fileID: 0}
+  bigDogOpen3ConnectedEast: {fileID: 0}
+  bigDogOpen3ConnectedSouth: {fileID: 0}
+  bigDogOpen3ConnectedWest: {fileID: 0}
   bigDogNE: {fileID: 1669955001949877241, guid: b904f7e013f9b7c4b8601ff260e537e5, type: 3}
   bigDogES: {fileID: -5209184284951002492, guid: d4308b07e5eba4647832d860f6fda58e, type: 3}
   bigDogWN: {fileID: 4650782177985915308, guid: 3f66abfd812c1964d8f93a238aaebe42, type: 3}
@@ -161,6 +166,9 @@ MonoBehaviour:
   bigDogNEW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogNSW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogESW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
+  bigDogFace: {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  bigDogFace1x2Vertical: {fileID: 0}
+  bigDogFace2x1Horizontal: {fileID: 0}
 --- !u!4 &46408626
 Transform:
   m_ObjectHideFlags: 0
@@ -170,13 +178,26 @@ Transform:
   m_GameObject: {fileID: 46408624}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 897665145}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &46408627
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 46408624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 264e33e614b7dd747be812367a0a805f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.LevelMapObject
+  markerCode: 80
 --- !u!1 &374872907
 GameObject:
   m_ObjectHideFlags: 0
@@ -276,7 +297,7 @@ Transform:
   m_GameObject: {fileID: 374872907}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.02, y: 0.03, z: 0}
+  m_LocalPosition: {x: 3, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -455,7 +476,7 @@ MonoBehaviour:
   inventory: {fileID: 910100000002}
   interactor: {fileID: 910100000003}
   kitchen: {fileID: 1107457066}
-  pet: {fileID: 46408625}
+  pets: []
   boxes: []
   input: {fileID: 0}
   exitController: {fileID: 0}
@@ -472,11 +493,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.LevelSceneSettings
   grid:
-    width: 7
-    height: 7
+    width: 5
+    height: 5
     cellSize: 1
   tileTheme: {fileID: 11400000, guid: a27acbcae90c4595a21274c2c08ef024, type: 2}
-  tileMap: 
+  tileMap: '..K..
+
+    .....
+
+    .S...
+
+    ..P..
+
+    .....'
+  doorLinks: []
 --- !u!4 &843840995
 Transform:
   m_ObjectHideFlags: 0
@@ -686,6 +716,7 @@ GameObject:
   - component: {fileID: 1107457068}
   - component: {fileID: 1107457067}
   - component: {fileID: 1107457066}
+  - component: {fileID: 1107457070}
   m_Layer: 0
   m_Name: Kitchen
   m_TagString: Untagged
@@ -780,6 +811,19 @@ Transform:
   - {fileID: 880005605}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1107457070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1107457065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 264e33e614b7dd747be812367a0a805f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.LevelMapObject
+  markerCode: 75
 --- !u!21 &1252635846
 Material:
   serializedVersion: 8
@@ -849,6 +893,7 @@ GameObject:
   - component: {fileID: 910100000001}
   - component: {fileID: 910100000002}
   - component: {fileID: 910100000003}
+  - component: {fileID: 910100000007}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -879,7 +924,7 @@ Transform:
   m_GameObject: {fileID: 2107135874}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2, y: 0, z: 0}
+  m_LocalPosition: {x: -1, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -939,7 +984,7 @@ MonoBehaviour:
   player: {fileID: 2107135875}
   inventory: {fileID: 910100000002}
   kitchen: {fileID: 1107457066}
-  pet: {fileID: 46408625}
+  pets: []
   boxes: []
 --- !u!1 &910100000004
 GameObject:
@@ -1032,6 +1077,19 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &910100000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2107135874}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 264e33e614b7dd747be812367a0a805f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.LevelMapObject
+  markerCode: 83
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

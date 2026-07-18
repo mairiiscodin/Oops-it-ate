@@ -11,20 +11,20 @@ namespace OopsItAte.Interaction
         [SerializeField] private GridMover player;
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private KitchenStation kitchen;
-        [SerializeField] private PetBody pet;
+        [SerializeField] private PetBody[] pets;
         [SerializeField] private PushableBox[] boxes;
 
         public void Initialize(
             GridMover playerMover,
             PlayerInventory playerInventory,
             KitchenStation kitchenStation,
-            PetBody petBody,
+            PetBody[] petBodies,
             PushableBox[] boxes = null)
         {
             player = playerMover;
             inventory = playerInventory;
             kitchen = kitchenStation;
-            pet = petBody;
+            pets = petBodies ?? new PetBody[0];
             this.boxes = boxes ?? new PushableBox[0];
         }
 
@@ -93,9 +93,12 @@ namespace OopsItAte.Interaction
 
         private PetBody FindBodyAt(GridPosition targetPosition)
         {
-            if (pet != null && pet.Contains(targetPosition))
+            for (int i = 0; i < pets.Length; i++)
             {
-                return pet;
+                if (pets[i] != null && pets[i].Contains(targetPosition))
+                {
+                    return pets[i];
+                }
             }
 
             if (kitchen != null && kitchen.GrowableBody != null

@@ -15,7 +15,7 @@ namespace OopsItAte.Levels
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private PlayerInteractor interactor;
         [SerializeField] private KitchenStation kitchen;
-        [SerializeField] private PetBody pet;
+        [SerializeField] private PetBody[] pets;
         [SerializeField] private PushableBox[] boxes;
         [SerializeField] private KeyboardGridInput input;
         [SerializeField] private LevelExitController exitController;
@@ -42,19 +42,19 @@ namespace OopsItAte.Levels
 
             player = FindAnyObjectByType<GridMover>();
             kitchen = FindAnyObjectByType<KitchenStation>();
-            pet = FindAnyObjectByType<PetBody>();
+            pets = FindObjectsByType<PetBody>();
             boxes = FindObjectsByType<PushableBox>();
 
-            if (player == null || kitchen == null || pet == null)
+            if (player == null || kitchen == null || pets == null || pets.Length == 0)
             {
-                Debug.LogError("Scene needs Player, KitchenStation, and PetBody objects.", this);
+                Debug.LogError("Scene needs Player, KitchenStation, and at least one PetBody object.", this);
                 enabled = false;
                 return;
             }
 
             gridWorld = CreateGridWorld();
             SetupKitchen();
-            SetupPet();
+            SetupPets();
             SetupBoxes();
             exitController = CreateExitController();
 
@@ -77,7 +77,7 @@ namespace OopsItAte.Levels
                 interactor = player.gameObject.AddComponent<PlayerInteractor>();
             }
 
-            interactor.Initialize(player, inventory, kitchen, pet, boxes);
+            interactor.Initialize(player, inventory, kitchen, pets, boxes);
             input = CreateInput(player, interactor, exitController);
             SetupCamera();
         }
@@ -135,10 +135,13 @@ namespace OopsItAte.Levels
             kitchen.transform.position = settings.grid.GridToWorld(position) + Vector3.back * 0.25f;
         }
 
-        private void SetupPet()
+        private void SetupPets()
         {
-            GridPosition position = settings.grid.WorldToGrid(pet.transform.position);
-            pet.Initialize(gridWorld, position);
+            for (int i = 0; i < pets.Length; i++)
+            {
+                GridPosition position = settings.grid.WorldToGrid(pets[i].transform.position);
+                pets[i].Initialize(gridWorld, position);
+            }
         }
 
         private void SetupBoxes()

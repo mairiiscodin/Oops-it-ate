@@ -87,5 +87,19 @@ namespace OopsItAte.Editor
 
             Selection.activeGameObject = door;
         }
+
+        [MenuItem("Tools/Oops It Ate/Open Level Painter", false, 1)]
+        public static void OpenLevelPainter()
+        {
+            LevelSceneSettings settings = Object.FindAnyObjectByType<LevelSceneSettings>();
+            if (settings == null)
+            {
+                CreateLevelRoot();
+                settings = Selection.activeGameObject.GetComponent<LevelSceneSettings>();
+            }
+
+            Selection.activeGameObject = settings.gameObject;
+            EditorGUIUtility.PingObject(settings.gameObject);
+        }
     }
 }

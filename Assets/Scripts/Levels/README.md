@@ -10,6 +10,19 @@ Current slice: scene-based level setup with grid movement, kitchen, carried food
 4. Add `SceneLevelBuilder`.
 5. Set grid width, height, and cell size on `LevelSceneSettings`.
 
+## Fast level painter
+
+1. Open `Tools > Oops It Ate > Open Level Painter`.
+2. Select a brush and click or drag over cells in the `Quick Level Painter` inspector.
+3. Use `S` for Player, `K` for Kitchen, one or more `P` markers for Pets, `B` for a pushable box, and `1` through `9` for doors.
+4. For each numbered door, drag its target Scene asset into `Door Targets`.
+5. Click `Sync Objects From Map` to move existing scene objects and create any missing objects.
+6. Click `Add Door Scenes To Build` once to add the current scene and all door targets to the Build Profile scene list.
+
+`Sync Objects From Map` also copies the complete Pet and Kitchen visual setup from Scene 1. Use `Setup Pet/Kitchen Visuals Like Scene 1` to reapply only the visuals without moving any objects.
+
+The painter reports missing or duplicate required markers before Play. Door targets are selected as Scene assets, so level authors do not need to type target scene names.
+
 ## Make a non-rectangular tile map
 
 On `LevelSceneSettings`, fill in `Tile Map` using:
@@ -17,6 +30,8 @@ On `LevelSceneSettings`, fill in `Tile Map` using:
 - `.` for a walkable floor tile.
 - `#` for a wall tile.
 - A space or `_` for empty space outside the map.
+- `S`, `K`, `P`, and `B` for walkable cells containing scene objects.
+- `1` through `9` for numbered boundary doors.
 
 The first text line is the top row. The grid width and height are read from the text map automatically at Play time and in the Scene gizmo preview. For example, this creates an L-shaped room:
 
