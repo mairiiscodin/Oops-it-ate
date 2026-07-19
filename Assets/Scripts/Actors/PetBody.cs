@@ -7,6 +7,10 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Serialization;
 
+#if UNITY_EDITOR
+using UnityEditor;
+#endif
+
 namespace OopsItAte.Actors
 {
     public readonly struct PetBodyMove
@@ -24,6 +28,8 @@ namespace OopsItAte.Actors
     public sealed class PetBody : MonoBehaviour
     {
         private const int ActorSortingOrderBase = 1000;
+        private static readonly int IsFatAnimatorParameter = Animator.StringToHash("IsFat");
+        private static readonly int IsHungryAnimatorParameter = Animator.StringToHash("IsHungry");
 
         [SerializeField] private Color color = new Color(0.25f, 0.9f, 0.35f);
         [SerializeField] private GridPosition origin;
@@ -57,12 +63,17 @@ namespace OopsItAte.Actors
         [SerializeField] private Sprite bigDogESW;
 
         [Header("Big Pet Face Overlay")]
-        [Tooltip("Transparent face drawn once at the center of the largest filled body rectangle.")]
+        [Tooltip("26-frame animation played on the face overlay while the pet is enlarged.")]
+        [SerializeField] private AnimationClip bigDogFaceAnimation;
+        [HideInInspector]
         [SerializeField] private Sprite bigDogFace;
         [Tooltip("Optional face used when the largest body rectangle is 1 cell wide and 2 cells tall.")]
         [SerializeField] private Sprite bigDogFace1x2Vertical;
         [Tooltip("Optional face used when the largest body rectangle is 2 cells wide and 1 cell tall.")]
         [SerializeField] private Sprite bigDogFace2x1Horizontal;
+
+        [Header("Big Pet Burp Animation")]
+        [SerializeField, Min(0.1f)] private float bigDogFaceFallbackDuration = 1.1f;
 
         private readonly HashSet<GridPosition> bodyCells = new HashSet<GridPosition>();
         private readonly Dictionary<GridPosition, GameObject> visuals = new Dictionary<GridPosition, GameObject>();
@@ -71,6 +82,13 @@ namespace OopsItAte.Actors
         private Material bodyMaterial;
         private Coroutine burpCoroutine;
         private GameObject bigPetFaceVisual;
+        private Animator petAnimator;
+        private bool becameFat;
+        private GridMover playerMover;
+        private PlayerInventory playerInventory;
+        private bool isShowingHungryAnimation;
+        [HideInInspector]
+        [SerializeField] private PetFaceAnimationData bigDogFaceFrameData;
 
         public bool CanBePushedByBodyGrowth => canBePushedByBodyGrowth;
 
@@ -91,12 +109,32 @@ namespace OopsItAte.Actors
             color = bodyColor;
             bodyName = displayName;
             FindNormalVisual();
+            petAnimator = normalVisual != null
+                ? normalVisual.GetComponentInChildren<Animator>(true)
+                : null;
+            becameFat = false;
+            isShowingHungryAnimation = false;
+            playerMover = null;
+            playerInventory = null;
+            if (bigDogFaceAnimation == null)
+            {
+                bigDogFaceAnimation = Resources.Load<AnimationClip>("Pet/BigDogFace");
+            }
+            if (bigDogFaceFrameData == null)
+            {
+                bigDogFaceFrameData = Resources.Load<PetFaceAnimationData>("Pet/BigDogFaceFrames");
+            }
             bodyCells.Clear();
             bodyCells.Add(origin);
             growthLayers.Clear();
             StopBurpTimer();
             SyncAttachedGridObject();
             Redraw();
+        }
+
+        private void Update()
+        {
+            UpdateHungryAnimation();
         }
 
         public bool IsAdjacentTo(GridPosition position)
@@ -535,6 +573,7 @@ namespace OopsItAte.Actors
             bodyCells.Clear();
             bodyCells.Add(origin);
             growthLayers.Clear();
+            becameFat = true;
             StopBurpTimer();
             Redraw();
             Debug.Log($"{bodyName} burped and shrank to 1x1.");
@@ -562,7 +601,7 @@ namespace OopsItAte.Actors
         {
             while (growthLayers.Count > 0)
             {
-                yield return new WaitForSeconds(3f);
+                yield return PlayBigDogFaceBurpAnimation();
 
                 if (growthLayers.Count == 0)
                 {
@@ -577,11 +616,39 @@ namespace OopsItAte.Actors
                 }
 
                 growthLayers.RemoveAt(growthLayers.Count - 1);
+                if (growthLayers.Count == 0)
+                {
+                    becameFat = true;
+                }
+
                 Redraw();
                 Debug.Log($"{bodyName} burped and lost one growth layer.");
             }
 
             burpCoroutine = null;
+        }
+
+        private IEnumerator PlayBigDogFaceBurpAnimation()
+        {
+            Sprite[] frames = bigDogFaceFrameData != null
+                ? bigDogFaceFrameData.Frames
+                : null;
+            if (bigPetFaceVisual != null && frames != null && frames.Length > 0)
+            {
+                SpriteRenderer faceRenderer = bigPetFaceVisual.GetComponent<SpriteRenderer>();
+                float frameDuration = 1f / Mathf.Max(1f, bigDogFaceFrameData.FramesPerSecond);
+                for (int frameIndex = 0;
+                     frameIndex < frames.Length && bigPetFaceVisual != null;
+                     frameIndex++)
+                {
+                    faceRenderer.sprite = frames[frameIndex];
+                    yield return new WaitForSeconds(frameDuration);
+                }
+
+                yield break;
+            }
+
+            yield return new WaitForSeconds(Mathf.Max(0.1f, bigDogFaceFallbackDuration));
         }
 
         private static GridPosition GetPushDirection(GridPosition bodyCell, GridPosition playerPosition)
@@ -655,10 +722,25 @@ namespace OopsItAte.Actors
         private void Redraw()
         {
             bool showNormalVisual = normalVisual != null && bodyCells.Count == 1;
+            if (petAnimator != null && !showNormalVisual && isShowingHungryAnimation)
+            {
+                isShowingHungryAnimation = false;
+                petAnimator.SetBool(IsHungryAnimatorParameter, false);
+            }
+
             if (normalVisual != null)
             {
                 normalVisual.SetActive(showNormalVisual);
                 ConfigureNormalVisualSorting();
+            }
+
+            // Set the parameter after re-enabling the visual. Animator resets its
+            // parameters when its GameObject is reactivated unless state retention
+            // is enabled, which previously sent the pet back to Idle here.
+            if (petAnimator != null && showNormalVisual)
+            {
+                petAnimator.SetBool(IsHungryAnimatorParameter, false);
+                petAnimator.SetBool(IsFatAnimatorParameter, becameFat);
             }
 
             // At 1x1 the authored sprite/animation replaces the generated square completely.
@@ -725,6 +807,38 @@ namespace OopsItAte.Actors
 
             CreateBigPetFaceVisual();
             AddBlockers();
+        }
+
+        private void UpdateHungryAnimation()
+        {
+            if (petAnimator == null)
+            {
+                return;
+            }
+
+            if (playerMover == null)
+            {
+                playerMover = FindAnyObjectByType<GridMover>();
+            }
+
+            if (playerMover != null && playerInventory == null)
+            {
+                playerInventory = playerMover.GetComponent<PlayerInventory>();
+            }
+
+            bool shouldShowHungry = !becameFat
+                && bodyCells.Count == 1
+                && playerMover != null
+                && playerInventory != null
+                && playerInventory.HasFood
+                && IsAdjacentTo(playerMover.CurrentPosition);
+            if (shouldShowHungry == isShowingHungryAnimation)
+            {
+                return;
+            }
+
+            isShowingHungryAnimation = shouldShowHungry;
+            petAnimator.SetBool(IsHungryAnimatorParameter, shouldShowHungry);
         }
 
         private bool UsesBigPetBodySprites()
@@ -832,6 +946,16 @@ namespace OopsItAte.Actors
             SpriteRenderer renderer = bigPetFaceVisual.AddComponent<SpriteRenderer>();
             renderer.sprite = faceSprite;
             renderer.sortingOrder = GetHighestBodySortingOrder() + 1;
+
+            // The generated face object is the overlay above the large body tiles.
+            // Put the animation's first frame on it immediately, then the burp
+            // coroutine advances the remaining frames before shrinking one layer.
+            if (bigDogFaceFrameData != null
+                && bigDogFaceFrameData.Frames != null
+                && bigDogFaceFrameData.Frames.Length > 0)
+            {
+                renderer.sprite = bigDogFaceFrameData.Frames[0];
+            }
         }
 
         private int GetHighestBodySortingOrder()
@@ -1069,5 +1193,21 @@ namespace OopsItAte.Actors
             Gizmos.color = color;
             Gizmos.DrawCube(transform.position, Vector3.one);
         }
+
+#if UNITY_EDITOR
+        private void OnValidate()
+        {
+            if (bigDogFaceAnimation == null)
+            {
+                bigDogFaceAnimation = AssetDatabase.LoadAssetAtPath<AnimationClip>(
+                    "Assets/Resources/Pet/BigDogFace.anim");
+            }
+            if (bigDogFaceFrameData == null)
+            {
+                bigDogFaceFrameData = AssetDatabase.LoadAssetAtPath<PetFaceAnimationData>(
+                    "Assets/Resources/Pet/BigDogFaceFrames.asset");
+            }
+        }
+#endif
     }
 }

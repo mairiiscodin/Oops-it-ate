@@ -1,4 +1,5 @@
 using System.Collections;
+using OopsItAte.Actors;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -14,7 +15,18 @@ namespace OopsItAte.Grid
         [SerializeField] private SpriteRenderer spriteRenderer;
         [SerializeField] private Sprite frontSprite;
         [SerializeField] private Sprite backSprite;
+        [Tooltip("Optional dedicated left sprite. Falls back to a flipped Side Sprite when empty.")]
+        [SerializeField] private Sprite leftSprite;
+        [Tooltip("Optional dedicated right sprite. Falls back to Side Sprite when empty.")]
+        [SerializeField] private Sprite rightSprite;
         [SerializeField] private Sprite sideSprite;
+
+        [Header("Has Food")]
+        [SerializeField] private Sprite hasFoodFrontSprite;
+        [SerializeField] private Sprite hasFoodBackSprite;
+        [SerializeField] private Sprite hasFoodLeftSprite;
+        [SerializeField] private Sprite hasFoodRightSprite;
+
         [SerializeField] private int sortingOrderBase = 1000;
         [SerializeField] private int sortingOrderOffset = 1;
 
@@ -31,6 +43,9 @@ namespace OopsItAte.Grid
         private Vector3 baseLocalPosition;
         private Vector3 baseLocalScale;
         private Coroutine animationRoutine;
+        private PlayerInventory inventory;
+        private GridPosition currentFacing = new GridPosition(0, -1);
+        private bool hasFood;
 
         public bool IsAnimating => animationRoutine != null;
 
@@ -38,7 +53,15 @@ namespace OopsItAte.Grid
         {
             EnsureReferences();
             CaptureBasePose();
-            SetFacing(new GridPosition(0, -1));
+            BindInventory();
+            SetFacing(currentFacing);
+        }
+
+        private void Start()
+        {
+            // Runtime-built levels can add PlayerInventory after this component's Awake.
+            BindInventory();
+            SetHasFood(inventory != null && inventory.HasFood);
         }
 
         public void SetFacing(GridPosition direction)
@@ -48,23 +71,54 @@ namespace OopsItAte.Grid
                 return;
             }
 
-            UpdateSortingOrder();
+            if (!direction.Equals(default))
+            {
+                currentFacing = direction;
+            }
 
-            if (direction.Y > 0)
+            UpdateSortingOrder();
+            Sprite selectedSprite = null;
+            bool flipX = false;
+
+            if (currentFacing.Y > 0)
             {
-                if (backSprite != null) spriteRenderer.sprite = backSprite;
-                spriteRenderer.flipX = false;
+                selectedSprite = hasFood && hasFoodBackSprite != null
+                    ? hasFoodBackSprite
+                    : backSprite;
             }
-            else if (direction.Y < 0)
+            else if (currentFacing.Y < 0)
             {
-                if (frontSprite != null) spriteRenderer.sprite = frontSprite;
-                spriteRenderer.flipX = false;
+                selectedSprite = hasFood && hasFoodFrontSprite != null
+                    ? hasFoodFrontSprite
+                    : frontSprite;
             }
-            else if (direction.X != 0)
+            else if (currentFacing.X < 0)
             {
-                if (sideSprite != null) spriteRenderer.sprite = sideSprite;
-                spriteRenderer.flipX = direction.X < 0;
+                bool hasDedicatedLeftSprite = hasFood && hasFoodLeftSprite != null;
+                selectedSprite = hasDedicatedLeftSprite
+                    ? hasFoodLeftSprite
+                    : leftSprite != null ? leftSprite : sideSprite;
+                flipX = !hasDedicatedLeftSprite && leftSprite == null;
             }
+            else if (currentFacing.X > 0)
+            {
+                selectedSprite = hasFood && hasFoodRightSprite != null
+                    ? hasFoodRightSprite
+                    : rightSprite != null ? rightSprite : sideSprite;
+            }
+
+            if (selectedSprite != null)
+            {
+                spriteRenderer.sprite = selectedSprite;
+            }
+
+            spriteRenderer.flipX = flipX;
+        }
+
+        public void SetHasFood(bool value)
+        {
+            hasFood = value;
+            SetFacing(currentFacing);
         }
 
         private void UpdateSortingOrder()
@@ -190,6 +244,14 @@ namespace OopsItAte.Grid
             ResetPose();
         }
 
+        private void OnDestroy()
+        {
+            if (inventory != null)
+            {
+                inventory.HasFoodChanged -= SetHasFood;
+            }
+        }
+
         private void OnValidate()
         {
             EnsureReferences();
@@ -217,7 +279,32 @@ namespace OopsItAte.Grid
             if (frontSprite == null) frontSprite = LoadSprite("Assets/Assets/ChefFront.aseprite");
             if (backSprite == null) backSprite = LoadSprite("Assets/Assets/ChefBack.aseprite");
             if (sideSprite == null) sideSprite = LoadSprite("Assets/Assets/ChefSide.aseprite");
+            if (hasFoodFrontSprite == null) hasFoodFrontSprite = LoadSprite("Assets/Assets/ChefHasFoodFront.aseprite");
+            if (hasFoodBackSprite == null) hasFoodBackSprite = LoadSprite("Assets/Assets/ChefHasFoodBack.aseprite");
+            if (hasFoodLeftSprite == null) hasFoodLeftSprite = LoadSprite("Assets/Assets/ChefHasFoodLeft.aseprite");
+            if (hasFoodRightSprite == null) hasFoodRightSprite = LoadSprite("Assets/Assets/ChefHasFoodRight.aseprite");
 #endif
+        }
+
+        private void BindInventory()
+        {
+            PlayerInventory foundInventory = GetComponent<PlayerInventory>();
+            if (foundInventory == inventory)
+            {
+                return;
+            }
+
+            if (inventory != null)
+            {
+                inventory.HasFoodChanged -= SetHasFood;
+            }
+
+            inventory = foundInventory;
+            if (inventory != null)
+            {
+                inventory.HasFoodChanged += SetHasFood;
+                hasFood = inventory.HasFood;
+            }
         }
 
 #if UNITY_EDITOR

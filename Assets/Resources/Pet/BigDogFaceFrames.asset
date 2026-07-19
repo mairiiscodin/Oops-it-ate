@@ -1,0 +1,42 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 08818b0535c3a464cbc5adde4adbffda, type: 3}
+  m_Name: BigDogFaceFrames
+  m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Actors.PetFaceAnimationData
+  frames:
+  - {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 6977842537602656465, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 8931006720027992651, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 973582578734908930, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 6967822268988588849, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: -662577905561832332, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: -2135524775125664490, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: -4002338530042721951, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: -2014109427532314139, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 5079003661226410292, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 8959522568391466959, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 2725621346027931754, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: -1282043596920395483, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 8132641540734541369, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 3175716175893761621, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: -4089863599723081399, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: -4214677783403911748, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 2998604471189367809, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: -8338636823497657294, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 3617784308700755256, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 1000541803632290809, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 1457619245833502594, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 8396489539101329767, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: -6939647741368838646, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 4122868848894670660, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  - {fileID: 2575912667994087624, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  framesPerSecond: 12

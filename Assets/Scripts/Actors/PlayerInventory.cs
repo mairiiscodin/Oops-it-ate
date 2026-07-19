@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace OopsItAte.Actors
@@ -7,6 +8,7 @@ namespace OopsItAte.Actors
         [SerializeField] private bool hasFood;
 
         public bool HasFood => hasFood;
+        public event Action<bool> HasFoodChanged;
 
         public bool TryTakeFood()
         {
@@ -16,6 +18,7 @@ namespace OopsItAte.Actors
             }
 
             hasFood = true;
+            HasFoodChanged?.Invoke(hasFood);
             Debug.Log("Player picked up food.");
             return true;
         }
@@ -28,6 +31,7 @@ namespace OopsItAte.Actors
             }
 
             hasFood = false;
+            HasFoodChanged?.Invoke(hasFood);
             Debug.Log("Player used food.");
             return true;
         }
