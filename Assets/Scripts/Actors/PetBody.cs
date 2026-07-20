@@ -75,12 +75,20 @@ namespace OopsItAte.Actors
         [Header("Big Pet Burp Animation")]
         [SerializeField, Min(0.1f)] private float bigDogFaceFallbackDuration = 1.1f;
 
+        [Header("Resize Shake")]
+        [SerializeField, Min(0f)] private float resizeShakeDuration = 0.18f;
+        [SerializeField, Min(0f)] private float resizeShakeStrength = 0.06f;
+        [SerializeField, Min(1f)] private float resizeShakeFrequency = 36f;
+
         private readonly HashSet<GridPosition> bodyCells = new HashSet<GridPosition>();
         private readonly Dictionary<GridPosition, GameObject> visuals = new Dictionary<GridPosition, GameObject>();
         private readonly List<List<GridPosition>> growthLayers = new List<List<GridPosition>>();
+        private readonly List<Transform> resizeShakeTargets = new List<Transform>();
+        private readonly List<Vector3> resizeShakeBasePositions = new List<Vector3>();
         private GridWorld world;
         private Material bodyMaterial;
         private Coroutine burpCoroutine;
+        private Coroutine resizeShakeCoroutine;
         private GameObject bigPetFaceVisual;
         private Animator petAnimator;
         private bool becameFat;
@@ -556,6 +564,7 @@ namespace OopsItAte.Actors
 
             growthLayers.Add(new List<GridPosition>(growthCells));
             Redraw();
+            PlayResizeShake();
             RestartBurpTimer();
             Debug.Log($"{bodyName} expanded into {growthCells.Count} cell(s).");
             return true;
@@ -576,6 +585,7 @@ namespace OopsItAte.Actors
             becameFat = true;
             StopBurpTimer();
             Redraw();
+            PlayResizeShake();
             Debug.Log($"{bodyName} burped and shrank to 1x1.");
             return true;
         }
@@ -622,6 +632,7 @@ namespace OopsItAte.Actors
                 }
 
                 Redraw();
+                PlayResizeShake();
                 Debug.Log($"{bodyName} burped and lost one growth layer.");
             }
 
@@ -839,6 +850,102 @@ namespace OopsItAte.Actors
 
             isShowingHungryAnimation = shouldShowHungry;
             petAnimator.SetBool(IsHungryAnimatorParameter, shouldShowHungry);
+        }
+
+        private void PlayResizeShake()
+        {
+            if (!string.Equals(bodyName, "Pet", StringComparison.OrdinalIgnoreCase)
+                || resizeShakeDuration <= 0f
+                || resizeShakeStrength <= 0f)
+            {
+                return;
+            }
+
+            StopResizeShake();
+            CaptureResizeShakeTarget(normalVisual != null && normalVisual.activeInHierarchy
+                ? normalVisual.transform
+                : null);
+            foreach (GameObject visual in visuals.Values)
+            {
+                CaptureResizeShakeTarget(visual != null ? visual.transform : null);
+            }
+            CaptureResizeShakeTarget(bigPetFaceVisual != null ? bigPetFaceVisual.transform : null);
+
+            if (resizeShakeTargets.Count > 0)
+            {
+                resizeShakeCoroutine = StartCoroutine(ShakeResizeVisuals());
+            }
+        }
+
+        private void CaptureResizeShakeTarget(Transform target)
+        {
+            if (target == null || resizeShakeTargets.Contains(target))
+            {
+                return;
+            }
+
+            resizeShakeTargets.Add(target);
+            resizeShakeBasePositions.Add(target.localPosition);
+        }
+
+        private IEnumerator ShakeResizeVisuals()
+        {
+            float elapsed = 0f;
+            float strength = resizeShakeStrength * (world != null ? world.Settings.cellSize : 1f);
+            while (elapsed < resizeShakeDuration)
+            {
+                elapsed += Time.deltaTime;
+                float progress = Mathf.Clamp01(elapsed / resizeShakeDuration);
+                float fade = 1f - progress;
+                float phase = elapsed * resizeShakeFrequency * Mathf.PI * 2f;
+                Vector3 offset = new Vector3(
+                    Mathf.Sin(phase),
+                    Mathf.Sin(phase * 1.37f + 0.8f) * 0.55f,
+                    0f) * (strength * fade);
+
+                for (int i = 0; i < resizeShakeTargets.Count; i++)
+                {
+                    if (resizeShakeTargets[i] != null)
+                    {
+                        resizeShakeTargets[i].localPosition = resizeShakeBasePositions[i] + offset;
+                    }
+                }
+
+                yield return null;
+            }
+
+            RestoreResizeShakeTargets();
+            resizeShakeCoroutine = null;
+        }
+
+        private void StopResizeShake()
+        {
+            if (resizeShakeCoroutine != null)
+            {
+                StopCoroutine(resizeShakeCoroutine);
+                resizeShakeCoroutine = null;
+            }
+
+            RestoreResizeShakeTargets();
+        }
+
+        private void RestoreResizeShakeTargets()
+        {
+            for (int i = 0; i < resizeShakeTargets.Count; i++)
+            {
+                if (resizeShakeTargets[i] != null)
+                {
+                    resizeShakeTargets[i].localPosition = resizeShakeBasePositions[i];
+                }
+            }
+
+            resizeShakeTargets.Clear();
+            resizeShakeBasePositions.Clear();
+        }
+
+        private void OnDisable()
+        {
+            StopResizeShake();
         }
 
         private bool UsesBigPetBodySprites()
