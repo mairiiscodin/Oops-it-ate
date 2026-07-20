@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 46408626}
   - component: {fileID: 46408625}
+  - component: {fileID: 46408627}
   m_Layer: 0
   m_Name: Pet
   m_TagString: Untagged
@@ -150,9 +151,13 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Actors.PetBody
   color: {r: 0.25, g: 0.9, b: 0.35, a: 1}
   bodyName: Pet
-  normalVisual: {fileID: -2253911629886400664, guid: f4960a1f34501b24593b1e23be220df3, type: 3}
+  canBePushedByBodyGrowth: 1
+  normalVisual: {fileID: 897665144}
   bigDogSide: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
-  bigDogFace: {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  bigDogOpen3ConnectedNorth: {fileID: 0}
+  bigDogOpen3ConnectedEast: {fileID: 0}
+  bigDogOpen3ConnectedSouth: {fileID: 0}
+  bigDogOpen3ConnectedWest: {fileID: 0}
   bigDogNE: {fileID: 1669955001949877241, guid: b904f7e013f9b7c4b8601ff260e537e5, type: 3}
   bigDogES: {fileID: -5209184284951002492, guid: d4308b07e5eba4647832d860f6fda58e, type: 3}
   bigDogWN: {fileID: 4650782177985915308, guid: 3f66abfd812c1964d8f93a238aaebe42, type: 3}
@@ -161,6 +166,11 @@ MonoBehaviour:
   bigDogNEW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogNSW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogESW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
+  bigDogFaceAnimation: {fileID: 7400000, guid: c8b2eddce22b9eb4487e7b4e16bfc7f3, type: 2}
+  bigDogFace: {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
+  bigDogFace1x2Vertical: {fileID: 0}
+  bigDogFace2x1Horizontal: {fileID: 0}
+  bigDogFaceFallbackDuration: 1.1
 --- !u!4 &46408626
 Transform:
   m_ObjectHideFlags: 0
@@ -170,13 +180,26 @@ Transform:
   m_GameObject: {fileID: 46408624}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 1, y: 0, z: 0}
+  m_LocalPosition: {x: 0, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 897665145}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &46408627
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 46408624}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 264e33e614b7dd747be812367a0a805f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.LevelMapObject
+  markerCode: 80
 --- !u!1 &374872907
 GameObject:
   m_ObjectHideFlags: 0
@@ -276,7 +299,7 @@ Transform:
   m_GameObject: {fileID: 374872907}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4.02, y: 0.03, z: 0}
+  m_LocalPosition: {x: 3, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -363,7 +386,7 @@ Camera:
   m_Enabled: 1
   serializedVersion: 2
   m_ClearFlags: 2
-  m_BackGroundColor: {r: 0.19215687, g: 0.3019608, b: 0.4745098, a: 0}
+  m_BackGroundColor: {r: 0.65882355, g: 0.854902, b: 0.86274517, a: 0}
   m_projectionMatrixMode: 1
   m_GateFitMode: 2
   m_FOVAxisMode: 0
@@ -455,7 +478,7 @@ MonoBehaviour:
   inventory: {fileID: 910100000002}
   interactor: {fileID: 910100000003}
   kitchen: {fileID: 1107457066}
-  pet: {fileID: 46408625}
+  pets: []
   boxes: []
   input: {fileID: 0}
   exitController: {fileID: 0}
@@ -472,11 +495,20 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.LevelSceneSettings
   grid:
-    width: 7
-    height: 7
+    width: 5
+    height: 5
     cellSize: 1
   tileTheme: {fileID: 11400000, guid: a27acbcae90c4595a21274c2c08ef024, type: 2}
-  tileMap: 
+  tileMap: '..K..
+
+    .....
+
+    .S...
+
+    ..P..
+
+    .....'
+  doorLinks: []
 --- !u!4 &843840995
 Transform:
   m_ObjectHideFlags: 0
@@ -593,6 +625,7 @@ GameObject:
   m_Component:
   - component: {fileID: 897665145}
   - component: {fileID: 897665146}
+  - component: {fileID: 897665147}
   m_Layer: 0
   m_Name: PetVisual
   m_TagString: Untagged
@@ -610,7 +643,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3.0075786, y: 3.0075786, z: 3.0075786}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 46408626}
@@ -674,6 +707,28 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!95 &897665147
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 897665144}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1bf36fc50faf28a4599c9e7f25c7d537, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &1107457065
 GameObject:
   m_ObjectHideFlags: 0
@@ -686,6 +741,7 @@ GameObject:
   - component: {fileID: 1107457068}
   - component: {fileID: 1107457067}
   - component: {fileID: 1107457066}
+  - component: {fileID: 1107457070}
   m_Layer: 0
   m_Name: Kitchen
   m_TagString: Untagged
@@ -780,6 +836,19 @@ Transform:
   - {fileID: 880005605}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1107457070
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1107457065}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 264e33e614b7dd747be812367a0a805f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.LevelMapObject
+  markerCode: 75
 --- !u!21 &1252635846
 Material:
   serializedVersion: 8
@@ -849,6 +918,7 @@ GameObject:
   - component: {fileID: 910100000001}
   - component: {fileID: 910100000002}
   - component: {fileID: 910100000003}
+  - component: {fileID: 910100000007}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -879,7 +949,7 @@ Transform:
   m_GameObject: {fileID: 2107135874}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -2, y: 0, z: 0}
+  m_LocalPosition: {x: -1, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -902,7 +972,13 @@ MonoBehaviour:
   spriteRenderer: {fileID: 910100000006}
   frontSprite: {fileID: 2161191996943007962, guid: fc2613c7ce11a5e49b99f2f5c6b2c8cc, type: 3}
   backSprite: {fileID: -4080705244023012874, guid: 25ba0456f1726944eba2d286ba6cc53d, type: 3}
+  leftSprite: {fileID: 861082731385477190, guid: 7ec8a4bb85290564c8b23f7238fcafea, type: 3}
+  rightSprite: {fileID: 7212186499767423757, guid: 4c81dc17a8773134487710aa9c175592, type: 3}
   sideSprite: {fileID: 7212186499767423757, guid: 4c81dc17a8773134487710aa9c175592, type: 3}
+  hasFoodFrontSprite: {fileID: 7376447835122124826, guid: 4f5425c82abd45a4db2fa8134851d6a1, type: 3}
+  hasFoodBackSprite: {fileID: 5119260923307909896, guid: 1605ad375b7e1e747b45baba11c3ace4, type: 3}
+  hasFoodLeftSprite: {fileID: -5896980076966270222, guid: b444c8bfbbedb624fb27e0a18970eb5d, type: 3}
+  hasFoodRightSprite: {fileID: 5990196542590762893, guid: 41190b3f3a17002458e0696c60a47747, type: 3}
   sortingOrderBase: 1000
   sortingOrderOffset: 1
   stepDuration: 0.14
@@ -939,7 +1015,7 @@ MonoBehaviour:
   player: {fileID: 2107135875}
   inventory: {fileID: 910100000002}
   kitchen: {fileID: 1107457066}
-  pet: {fileID: 46408625}
+  pets: []
   boxes: []
 --- !u!1 &910100000004
 GameObject:
@@ -968,7 +1044,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3.1302, y: 3.1302, z: 3.1302}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 2107135876}
@@ -1032,6 +1108,19 @@ SpriteRenderer:
   m_SpriteTileMode: 0
   m_WasSpriteAssigned: 1
   m_SpriteSortPoint: 0
+--- !u!114 &910100000007
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2107135874}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 264e33e614b7dd747be812367a0a805f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.LevelMapObject
+  markerCode: 83
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

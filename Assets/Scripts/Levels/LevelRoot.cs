@@ -38,7 +38,7 @@ namespace OopsItAte.Levels
             kitchen = CreateKitchen(gridWorld);
             pet = CreatePet(gridWorld);
             interactor = player.gameObject.AddComponent<PlayerInteractor>();
-            interactor.Initialize(player, inventory, kitchen, pet);
+            interactor.Initialize(player, inventory, kitchen, new[] { pet });
             input = CreateInput(player, interactor);
             SetupCamera();
         }

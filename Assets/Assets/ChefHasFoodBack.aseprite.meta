@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: b7ee24aa9b9acdb4a939b4fac81bf129
+guid: 1605ad375b7e1e747b45baba11c3ace4
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,51 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: Frame_0
+  - name: ChefHasFoodBack
     originalName: 
-    pivot: {x: 0.5, y: 0.5}
-    alignment: 9
-    border: {x: 0, y: 0, z: 0, w: 0}
-    customData: 
-    rect:
-      serializedVersion: 2
-      x: 4
-      y: 64
-      width: 27
-      height: 23
-    spriteID: 8fa4f00f4bd8f82459dbf689cb811f67
-    spriteBone: []
-    spriteOutline: []
-    vertices: []
-    spritePhysicsOutline: []
-    indices: 
-    edges: []
-    tessellationDetail: 0
-    uvTransform: {x: 4, y: 64}
-  - name: Frame_1
-    originalName: 
-    pivot: {x: 0.46551725, y: 0.52272725}
-    alignment: 9
-    border: {x: 0, y: 0, z: 0, w: 0}
-    customData: 
-    rect:
-      serializedVersion: 2
-      x: 4
-      y: 34
-      width: 29
-      height: 22
-    spriteID: b53a4605a32439e45b6c5702b24e3815
-    spriteBone: []
-    spriteOutline: []
-    vertices: []
-    spritePhysicsOutline: []
-    indices: 
-    edges: []
-    tessellationDetail: 0
-    uvTransform: {x: 4, y: 34}
-  - name: Frame_2
-    originalName: 
-    pivot: {x: 0.43548387, y: 0.52272725}
+    pivot: {x: 0.5, y: 0.42105263}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -179,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 31
-      height: 22
-    spriteID: b75d95898373de04eb37222718247547
+      width: 26
+      height: 38
+    spriteID: 93bdb36eaa0a32244ae62e68003d1ca2
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -190,78 +148,30 @@ ScriptedImporter:
     edges: []
     tessellationDetail: 0
     uvTransform: {x: 4, y: 4}
-  - name: Frame_3
-    originalName: 
-    pivot: {x: 0.5, y: 0.5}
-    alignment: 0
-    border: {x: 0, y: 0, z: 0, w: 0}
-    customData: 
-    rect:
-      serializedVersion: 2
-      x: 4
-      y: 95
-      width: 27
-      height: 23
-    spriteID: 1a8490737bd08e548b95e8976f101a95
-    spriteBone: []
-    spriteOutline: []
-    vertices: []
-    spritePhysicsOutline: []
-    indices: 
-    edges: []
-    tessellationDetail: 0
-    uvTransform: {x: 4, y: 95}
   spriteSheetImportData: []
   tileSetImportData: []
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 3887772050
+      value0: 637356803
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: DogIdle
+    name: ChefHasFoodBack
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: Frame_0
+    - name: ChefHasFoodBack
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 4
-        y: 0
-        width: 27
-        height: 23
-      spriteId: 8fa4f00f4bd8f82459dbf689cb811f67
-    - name: Frame_1
-      frameIndex: 1
-      additiveSortOrder: 0
-      cellRect:
         x: 3
         y: 0
-        width: 29
-        height: 22
-      spriteId: b53a4605a32439e45b6c5702b24e3815
-    - name: Frame_2
-      frameIndex: 2
-      additiveSortOrder: 0
-      cellRect:
-        x: 0
-        y: 0
-        width: 31
-        height: 22
-      spriteId: b75d95898373de04eb37222718247547
-    - name: Frame_3
-      frameIndex: 3
-      additiveSortOrder: 0
-      cellRect:
-        x: 3
-        y: 0
-        width: 27
-        height: 23
-      spriteId: 1a8490737bd08e548b95e8976f101a95
+        width: 26
+        height: 38
+      spriteId: 93bdb36eaa0a32244ae62e68003d1ca2
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -271,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 32, y: 32}
-  previousTextureSize: {x: 64, y: 128}
+  canvasSize: {x: 32, y: 38}
+  previousTextureSize: {x: 64, y: 64}
