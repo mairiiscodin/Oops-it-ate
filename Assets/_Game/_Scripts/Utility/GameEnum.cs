@@ -1,4 +1,4 @@
-public enum TileEntityType
+public enum GridCellType
 {
     Player,
     Floor,
