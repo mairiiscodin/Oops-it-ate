@@ -6,7 +6,8 @@ public class GameInputManager : MonoBehaviour
 {
     private GameInput gameInput;
 
-    public static event Action<Vector2> OnMovementPerformed;
+    public static event Action<Vector2Int> OnMovementPerformed;
+    public static event Action OnInteractPerformed;
 
     private void Awake()
     {
@@ -26,11 +27,21 @@ public class GameInputManager : MonoBehaviour
 
     private void Start()
     {
+        gameInput.Player.Movement.performed -= MovementPerformed;
+        gameInput.Player.Interact.performed -= InteractPerformed;
+        
         gameInput.Player.Movement.performed += MovementPerformed;
+        gameInput.Player.Interact.performed += InteractPerformed;
     }
 
     private void MovementPerformed(InputAction.CallbackContext ctx)
     {
-        OnMovementPerformed?.Invoke(ctx.ReadValue<Vector2>());
+        Vector2 movement = ctx.ReadValue<Vector2>();
+        OnMovementPerformed?.Invoke(new  Vector2Int((int)movement.x, (int)movement.y));
+    }
+    
+    private void InteractPerformed(InputAction.CallbackContext ctx)
+    {
+        OnInteractPerformed?.Invoke();
     }
 }

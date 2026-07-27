@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class GridEntity : MonoBehaviour
+public class GridEntityController : MonoBehaviour, IFeedable
 {
     protected GridManager gridManager;
     protected Vector3Int gridPos;
@@ -15,5 +15,10 @@ public class GridEntity : MonoBehaviour
     public void SetGridPos(Vector3Int gridPos)
     {
         this.gridPos = gridPos;
+    }
+    
+    public virtual void OnFed()
+    {
+        Debug.Log(gameObject.name + " fed.");
     }
 }

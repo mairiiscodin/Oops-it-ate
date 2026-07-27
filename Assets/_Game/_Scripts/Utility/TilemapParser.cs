@@ -17,9 +17,9 @@ public class TilemapParser
             _gridEntityPrefabDict[tpm.tileBase] = tpm.prefab;
     }
 
-    public List<(GridEntity gridEntity, Vector3Int gridPos)> ParseGridEntity(Tilemap targetTilemap)
+    public List<(GridEntityController gridEntity, Vector3Int gridPos)> ParseGridEntity(Tilemap targetTilemap)
     {
-        List<(GridEntity gridEntity, Vector3Int gridPos)> parsedList = new();
+        List<(GridEntityController gridEntity, Vector3Int gridPos)> parsedList = new();
         
         foreach (Vector3Int gridPos in targetTilemap.cellBounds.allPositionsWithin)
         {
@@ -27,8 +27,8 @@ public class TilemapParser
             if (curTile == null) continue;
             if (_gridEntityPrefabDict.TryGetValue(curTile, out GameObject prefab))
             {
-                GridEntity entity = prefab.GetComponent<GridEntity>();
-                parsedList.Add((entity, gridPos));
+                GridEntityController entityController = prefab.GetComponent<GridEntityController>();
+                parsedList.Add((entityController, gridPos));
                 targetTilemap.SetTile(gridPos, null);
             }
         }
