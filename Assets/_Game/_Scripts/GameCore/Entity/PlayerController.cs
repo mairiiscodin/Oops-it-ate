@@ -6,9 +6,17 @@ public class PlayerController : GridEntityController
 
     private bool isHoldingFood;
 
-    private void Awake()
+    private HoldFoodState holdFoodState;
+
+    public override void Initialize(GridManager gridManager, Vector3Int gridPos)
     {
+        base.Initialize(gridManager, gridPos);
         faceDirection = Direction.Down;
+        isHoldingFood = false;
+
+        holdFoodState = new HoldFoodState(this);
+        stateMachine.AddTransition(idleState, holdFoodState, () => isHoldingFood);
+        stateMachine.AddTransition(holdFoodState, idleState, () => !isHoldingFood);
     }
     
     private void Start()
@@ -33,7 +41,27 @@ public class PlayerController : GridEntityController
             gridEntityController == null) interactedEntityController = this;
         else interactedEntityController = gridEntityController;
         
-        interactedEntityController?.OnFed();
+        
+        if (isHoldingFood)
+        {
+            if (interactedEntityController is IFeedable feedable)
+            {
+                feedable.OnFed();
+                isHoldingFood = false;
+            }
+        }
+        else
+        {
+            if (interactedEntityController is OvenController _)
+            {
+                isHoldingFood = true;
+                Debug.Log("Picked up food from oven");
+            }
+            else
+            {
+                Debug.Log("No food to feed " + interactedEntityController.gameObject.name);
+            }
+        }
     }
 
     private void GameInputManager_OnMovementPerformed(Vector2Int direction)
@@ -64,4 +92,6 @@ public class PlayerController : GridEntityController
     }
 
     private bool CanMove(Vector3Int pos) => !gridManager.IsGridPosOccupied(pos);
+
+    public void SetHoldingFood(bool isHoldingFood) => this.isHoldingFood = isHoldingFood;
 }

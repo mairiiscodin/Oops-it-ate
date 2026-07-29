@@ -25,6 +25,14 @@ public class StateMachine
         currentState?.Tick();
     }
 
+    public void FixedTick()
+    {
+        Transition transition = GetTransition();
+        if (transition != null)
+            SetState(transition.To);
+        currentState?.Tick();
+    }
+
     public void SetState(IState state)
     {
         if (state == currentState) return;
