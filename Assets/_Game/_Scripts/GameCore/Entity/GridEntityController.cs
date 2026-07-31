@@ -5,10 +5,12 @@ public class GridEntityController : MonoBehaviour, IFeedable
 {
     protected GridManager gridManager;
     protected Vector3Int gridPos;
-    protected bool isFed;
-    protected Stack<(int fullness, Vector3Int gridPos)> occupiedGridPosStack;
+    
+    protected bool hasBeenFed;
+    protected Stack<(int fullness, FatCellController fatCell)> fatCellStack;
     protected int currentFullness;
     protected int maxFullness;
+    [SerializeField] protected Sprite fatSprite;
 
     protected StateMachine stateMachine;
     protected IdleState idleState;
@@ -20,15 +22,15 @@ public class GridEntityController : MonoBehaviour, IFeedable
         this.gridManager = gridManager;
         this.gridPos = gridPos;
 
-        isFed = false;
-        occupiedGridPosStack = new Stack<(int fullness, Vector3Int gridPos)>();
+        hasBeenFed = false;
+        fatCellStack = new Stack<(int fullness, FatCellController fatCell)>();
         currentFullness = 0;
         maxFullness = 3;
-        occupiedGridPosStack.Push((0, gridPos));
+        fatCellStack.Push((0, null));
 
         stateMachine = new StateMachine();
         idleState = new IdleState(this);
-        stateMachine.AddAnyTransition(idleState, () => !isFed);
+        stateMachine.AddAnyTransition(idleState, () => !hasBeenFed);
     }
 
     public Vector3Int GetGridPos() => gridPos;

@@ -92,6 +92,4 @@ public class PlayerController : GridEntityController
     }
 
     private bool CanMove(Vector3Int pos) => !gridManager.IsGridPosOccupied(pos);
-
-    public void SetHoldingFood(bool isHoldingFood) => this.isHoldingFood = isHoldingFood;
 }
