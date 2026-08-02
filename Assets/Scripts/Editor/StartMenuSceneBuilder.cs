@@ -17,20 +17,33 @@ public static class StartMenuSceneBuilder
     private const string TypoBannerPath = "Assets/Assets/typoBanner.aseprite";
     private const string CutsceneOnePath = "Assets/Assets/Cutscene1-1.aseprite";
     private const string CutsceneTwoPath = "Assets/Assets/Cutscene1-2.aseprite";
+    private const string CutsceneThreePath = "Assets/Assets/Cutscene2-1.aseprite";
 
     [InitializeOnLoadMethod]
     private static void QueueAutoBuild()
     {
+        EditorApplication.playModeStateChanged -= HandlePlayModeStateChanged;
+        EditorApplication.playModeStateChanged += HandlePlayModeStateChanged;
         EditorApplication.delayCall += () =>
         {
             BuildIfMissingScenes();
+            RefreshAllCutsceneFramesIfNeeded();
         };
+    }
+
+    private static void HandlePlayModeStateChanged(PlayModeStateChange state)
+    {
+        if (state == PlayModeStateChange.EnteredEditMode)
+        {
+            EditorApplication.delayCall += RefreshAllCutsceneFramesIfNeeded;
+        }
     }
 
     [DidReloadScripts]
     private static void BuildAfterScriptsReload()
     {
         BuildIfMissingScenes();
+        EditorApplication.delayCall += RefreshAllCutsceneFramesIfNeeded;
     }
 
     [MenuItem("Tools/Oops It Ate/Build Start Menu")]
@@ -41,6 +54,59 @@ public static class StartMenuSceneBuilder
         AddScenesToBuildSettings();
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();
+    }
+
+    [MenuItem("Tools/Oops It Ate/Refresh All Cutscene Frames")]
+    public static void RefreshAllCutsceneFramesIfNeeded()
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode)
+        {
+            return;
+        }
+
+        Sprite[] cutsceneOneFrames = LoadSpritesInFrameOrder(CutsceneOnePath);
+        Sprite[] cutsceneTwoFrames = LoadSpritesInFrameOrder(CutsceneTwoPath);
+        Sprite[] cutsceneThreeFrames = LoadSpritesInFrameOrder(CutsceneThreePath);
+        if (cutsceneOneFrames.Length == 0 || cutsceneTwoFrames.Length == 0 || cutsceneThreeFrames.Length == 0)
+        {
+            Debug.LogWarning("Could not refresh cutscene frames because at least one Aseprite asset has no imported sprites.");
+            return;
+        }
+
+        Scene scene = SceneManager.GetSceneByPath(IntroCutsceneScenePath);
+        bool openedForAssignment = !scene.IsValid() || !scene.isLoaded;
+        if (openedForAssignment)
+        {
+            scene = EditorSceneManager.OpenScene(IntroCutsceneScenePath, OpenSceneMode.Additive);
+        }
+
+        IntroCutsceneController controller = scene.GetRootGameObjects()
+            .SelectMany(root => root.GetComponentsInChildren<IntroCutsceneController>(true))
+            .FirstOrDefault();
+
+        if (controller != null)
+        {
+            SerializedObject serializedController = new SerializedObject(controller);
+            bool changed = SetSpriteArrayIfDifferent(
+                serializedController.FindProperty("cutsceneOneFrames"), cutsceneOneFrames);
+            changed |= SetSpriteArrayIfDifferent(
+                serializedController.FindProperty("cutsceneTwoFrames"), cutsceneTwoFrames);
+            changed |= SetSpriteArrayIfDifferent(
+                serializedController.FindProperty("cutsceneThreeFrames"), cutsceneThreeFrames);
+
+            if (changed)
+            {
+                serializedController.ApplyModifiedPropertiesWithoutUndo();
+                EditorSceneManager.MarkSceneDirty(scene);
+                EditorSceneManager.SaveScene(scene);
+                Debug.Log($"Refreshed IntroCutscene frames: {cutsceneOneFrames.Length}, {cutsceneTwoFrames.Length}, {cutsceneThreeFrames.Length}.");
+            }
+        }
+
+        if (openedForAssignment)
+        {
+            EditorSceneManager.CloseScene(scene, true);
+        }
     }
 
     private static void BuildIfMissingScenes()
@@ -85,6 +151,7 @@ public static class StartMenuSceneBuilder
         serializedController.FindProperty("bannerImage").objectReferenceValue = banner;
         SetSpriteArray(serializedController.FindProperty("bannerFrames"), bannerFrames);
         serializedController.FindProperty("bannerTransform").objectReferenceValue = bannerRect;
+        serializedController.FindProperty("startButtonTransform").objectReferenceValue = startButton.transform;
         serializedController.FindProperty("firstSceneName").stringValue = "IntroCutscene";
         serializedController.ApplyModifiedPropertiesWithoutUndo();
 
@@ -103,6 +170,7 @@ public static class StartMenuSceneBuilder
 
         Sprite[] cutsceneOneFrames = LoadSpritesInFrameOrder(CutsceneOnePath);
         Sprite[] cutsceneTwoFrames = LoadSpritesInFrameOrder(CutsceneTwoPath);
+        Sprite[] cutsceneThreeFrames = LoadSpritesInFrameOrder(CutsceneThreePath);
 
         Image cutsceneImage = CreateImage(canvas.transform, "Cutscene Image", cutsceneOneFrames.FirstOrDefault());
         cutsceneImage.preserveAspect = true;
@@ -115,6 +183,7 @@ public static class StartMenuSceneBuilder
         serializedController.FindProperty("cutsceneImage").objectReferenceValue = cutsceneImage;
         SetSpriteArray(serializedController.FindProperty("cutsceneOneFrames"), cutsceneOneFrames);
         SetSpriteArray(serializedController.FindProperty("cutsceneTwoFrames"), cutsceneTwoFrames);
+        SetSpriteArray(serializedController.FindProperty("cutsceneThreeFrames"), cutsceneThreeFrames);
         serializedController.FindProperty("gameplaySceneName").stringValue = "1";
         serializedController.ApplyModifiedPropertiesWithoutUndo();
 
@@ -264,5 +333,33 @@ public static class StartMenuSceneBuilder
         {
             property.GetArrayElementAtIndex(i).objectReferenceValue = sprites[i];
         }
+    }
+
+    private static bool SetSpriteArrayIfDifferent(SerializedProperty property, Sprite[] sprites)
+    {
+        if (property == null)
+        {
+            return false;
+        }
+
+        bool changed = property.arraySize != sprites.Length;
+        if (!changed)
+        {
+            for (int i = 0; i < sprites.Length; i++)
+            {
+                if (property.GetArrayElementAtIndex(i).objectReferenceValue != sprites[i])
+                {
+                    changed = true;
+                    break;
+                }
+            }
+        }
+
+        if (changed)
+        {
+            SetSpriteArray(property, sprites);
+        }
+
+        return changed;
     }
 }
