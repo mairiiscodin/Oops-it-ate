@@ -5,6 +5,7 @@ using UnityEngine.Tilemaps;
 public class GridManager : MonoBehaviour
 {
     [SerializeField] private TilemapParser tilemapParser;
+    [SerializeField] private FatCellController fatCellControllerPrefab;
     [SerializeField] private Tilemap floorTilemap;
     [SerializeField] private Tilemap wallTilemap;
     [SerializeField] private Tilemap entityTilemap;
@@ -59,5 +60,10 @@ public class GridManager : MonoBehaviour
         if (entityControllerMap.TryGetValue(gridPos, out GridEntityController gridEntityController))
             return gridEntityController;
         return null;
+    }
+
+    public FatCellController GetFatCellControllerPrefab()
+    {
+        return fatCellControllerPrefab;
     }
 }

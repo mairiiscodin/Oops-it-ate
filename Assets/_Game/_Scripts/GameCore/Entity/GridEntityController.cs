@@ -7,6 +7,7 @@ public class GridEntityController : MonoBehaviour, IFeedable
     protected Vector3Int gridPos;
     
     protected bool hasBeenFed;
+    protected FatCellController fatCellControllerPrefab;
     protected Stack<(int fullness, FatCellController fatCell)> fatCellStack;
     protected int currentFullness;
     protected int maxFullness;
@@ -21,6 +22,10 @@ public class GridEntityController : MonoBehaviour, IFeedable
     {
         this.gridManager = gridManager;
         this.gridPos = gridPos;
+        fatCellControllerPrefab = gridManager.GetFatCellControllerPrefab();
+
+        //temp for now, fat cells' sprites should be versatile based on their position compare to the entity root grid position
+        fatCellControllerPrefab.SetSprite(fatSprite);
 
         hasBeenFed = false;
         fatCellStack = new Stack<(int fullness, FatCellController fatCell)>();
@@ -41,6 +46,8 @@ public class GridEntityController : MonoBehaviour, IFeedable
     
     public virtual void OnFed()
     {
-        Debug.Log(gameObject.name + " fed.");
+        currentFullness++;
+        hasBeenFed = true;
+        
     }
 }

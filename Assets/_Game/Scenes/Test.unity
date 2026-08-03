@@ -1125,6 +1125,7 @@ MonoBehaviour:
       prefab: {fileID: 3091701835702947214, guid: 46b7a561880eb6e40b1bf143f3fac6f6, type: 3}
     - tileBase: {fileID: 11400000, guid: 6be34ff058a874a4993e68204771d386, type: 2}
       prefab: {fileID: 3662397540450106125, guid: 082f615765d147440a93f21d6b4270e4, type: 3}
+  fatCellControllerPrefab: {fileID: 7416266311898089562, guid: 00704c452bc805e439bf1e985652c557, type: 3}
   floorTilemap: {fileID: 2113593345}
   wallTilemap: {fileID: 1150023151}
   entityTilemap: {fileID: 376314029}
