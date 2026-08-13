@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: b22f679de014f794799f9e5d68427f05
+guid: 6ab2a8b1952927741b63ede200bd21bd
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: Chef
+  - name: OvenFront
     originalName: 
-    pivot: {x: 0.5, y: 0}
+    pivot: {x: 0.5, y: -0.11764706}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 18
-      height: 35
-    spriteID: 0803d1dd4218f04479fc426db140da7a
+      width: 30
+      height: 17
+    spriteID: fa6a956c52a7a54499e5a3377d3e61a0
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 3719641882
+      value0: 2414343223
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: Chef
+    name: OvenFront
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: Chef
+    - name: OvenFront
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 7
-        y: 0
-        width: 18
-        height: 35
-      spriteId: 0803d1dd4218f04479fc426db140da7a
+        x: 1
+        y: 2
+        width: 30
+        height: 17
+      spriteId: fa6a956c52a7a54499e5a3377d3e61a0
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 32, y: 64}
-  previousTextureSize: {x: 32, y: 64}
+  canvasSize: {x: 32, y: 32}
+  previousTextureSize: {x: 64, y: 32}

@@ -62,6 +62,14 @@ namespace OopsItAte.Actors
         [SerializeField] private Sprite bigDogNSW;
         [SerializeField] private Sprite bigDogESW;
 
+        [Header("Big Oven Tiles")]
+        [Tooltip("Tile repeated across every occupied oven cell.")]
+        [SerializeField] private Sprite ovenBackground;
+        [Tooltip("Tile repeated on cells along the exposed top edge of the oven.")]
+        [SerializeField] private Sprite ovenAbove;
+        [Tooltip("Sprite stretched over the largest filled square below the top edge.")]
+        [SerializeField] private Sprite ovenFront;
+
         [Header("Big Pet Face Overlay")]
         [Tooltip("26-frame animation played on the face overlay while the pet is enlarged.")]
         [SerializeField] private AnimationClip bigDogFaceAnimation;
@@ -90,6 +98,7 @@ namespace OopsItAte.Actors
         private Coroutine burpCoroutine;
         private Coroutine resizeShakeCoroutine;
         private GameObject bigPetFaceVisual;
+        private GameObject bigOvenVisualRoot;
         private Animator petAnimator;
         private bool becameFat;
         private GridMover playerMover;
@@ -103,6 +112,13 @@ namespace OopsItAte.Actors
         public void SetCanBePushedByBodyGrowth(bool canBePushed)
         {
             canBePushedByBodyGrowth = canBePushed;
+        }
+
+        public void ConfigureOvenSprites(Sprite background, Sprite above, Sprite front)
+        {
+            ovenBackground = background;
+            ovenAbove = above;
+            ovenFront = front;
         }
 
         public void Initialize(GridWorld gridWorld, GridPosition startPosition)
@@ -764,6 +780,7 @@ namespace OopsItAte.Actors
 
                 visuals.Clear();
                 DestroyBigPetFaceVisual();
+                DestroyBigOvenVisualRoot();
                 AddBlockers();
                 return;
             }
@@ -775,7 +792,15 @@ namespace OopsItAte.Actors
                 return;
             }
 
+            if (bodyCells.Count > 1 && UsesBigOvenSprites())
+            {
+                RedrawBigOvenSprites();
+                AddBlockers();
+                return;
+            }
+
             DestroyBigPetFaceVisual();
+            DestroyBigOvenVisualRoot();
 
             var removedCells = new List<GridPosition>();
             foreach (GridPosition cell in visuals.Keys)
@@ -870,6 +895,7 @@ namespace OopsItAte.Actors
                 CaptureResizeShakeTarget(visual != null ? visual.transform : null);
             }
             CaptureResizeShakeTarget(bigPetFaceVisual != null ? bigPetFaceVisual.transform : null);
+            CaptureResizeShakeTarget(bigOvenVisualRoot != null ? bigOvenVisualRoot.transform : null);
 
             if (resizeShakeTargets.Count > 0)
             {
@@ -976,6 +1002,7 @@ namespace OopsItAte.Actors
             }
             visuals.Clear();
             DestroyBigPetFaceVisual();
+            DestroyBigOvenVisualRoot();
 
             foreach (GridPosition cell in bodyCells)
             {
@@ -1065,6 +1092,193 @@ namespace OopsItAte.Actors
             }
         }
 
+        private bool UsesBigOvenSprites()
+        {
+            return string.Equals(bodyName, "Kitchen", StringComparison.OrdinalIgnoreCase)
+                && ovenBackground != null;
+        }
+
+        private void RedrawBigOvenSprites()
+        {
+            foreach (GameObject visual in visuals.Values)
+            {
+                Destroy(visual);
+            }
+            visuals.Clear();
+            DestroyBigPetFaceVisual();
+            DestroyBigOvenVisualRoot();
+
+            bigOvenVisualRoot = new GameObject($"{bodyName} Expanded Visual");
+            bigOvenVisualRoot.transform.SetParent(transform, false);
+
+            int highestOrder = ActorSortingOrderBase;
+            foreach (GridPosition cell in bodyCells)
+            {
+                int order = CreateOvenSprite(
+                    ovenBackground,
+                    $"Oven Background {cell}",
+                    world.Settings.GridToWorld(cell),
+                    new Vector2(world.Settings.cellSize, world.Settings.cellSize),
+                    ActorSortingOrderBase + Mathf.RoundToInt(-world.Settings.GridToWorld(cell).y * 100f));
+                highestOrder = Mathf.Max(highestOrder, order);
+            }
+
+            if (ovenAbove != null)
+            {
+                foreach (GridPosition cell in bodyCells)
+                {
+                    if (bodyCells.Contains(cell + new GridPosition(0, 1)))
+                    {
+                        continue;
+                    }
+
+                    Vector3 center = world.Settings.GridToWorld(cell);
+                    float width = world.Settings.cellSize;
+                    float height = ovenAbove.bounds.size.x > 0f
+                        ? width * ovenAbove.bounds.size.y / ovenAbove.bounds.size.x
+                        : width;
+                    center.y += (world.Settings.cellSize - height) * 0.5f;
+                    CreateOvenSprite(
+                        ovenAbove,
+                        $"Oven Above {cell}",
+                        center,
+                        new Vector2(width, height),
+                        highestOrder + 1);
+                }
+            }
+
+            if (ovenFront != null
+                && TryFindLargestOvenFrontSquare(
+                    out GridPosition bottomLeft,
+                    out GridPosition topRight))
+            {
+                int widthInCells = topRight.X - bottomLeft.X + 1;
+                int heightInCells = topRight.Y - bottomLeft.Y + 1;
+                Vector3 center = (world.Settings.GridToWorld(bottomLeft)
+                    + world.Settings.GridToWorld(topRight)) * 0.5f;
+                CreateOvenSprite(
+                    ovenFront,
+                    "Oven Front",
+                    center,
+                    new Vector2(
+                        widthInCells * world.Settings.cellSize,
+                        heightInCells * world.Settings.cellSize),
+                    highestOrder + 2);
+            }
+        }
+
+        private int CreateOvenSprite(
+            Sprite sprite,
+            string visualName,
+            Vector3 center,
+            Vector2 targetSize,
+            int sortingOrder)
+        {
+            if (sprite == null)
+            {
+                return sortingOrder;
+            }
+
+            GameObject visual = new GameObject(visualName);
+            visual.transform.SetParent(bigOvenVisualRoot.transform);
+            visual.transform.localScale = new Vector3(
+                sprite.bounds.size.x > 0f ? targetSize.x / sprite.bounds.size.x : 1f,
+                sprite.bounds.size.y > 0f ? targetSize.y / sprite.bounds.size.y : 1f,
+                1f);
+            visual.transform.position = center + Vector3.back * 0.5f
+                - Vector3.Scale(sprite.bounds.center, visual.transform.localScale);
+
+            SpriteRenderer renderer = visual.AddComponent<SpriteRenderer>();
+            renderer.sprite = sprite;
+            renderer.sortingOrder = sortingOrder;
+            return sortingOrder;
+        }
+
+        private bool TryFindLargestOvenFrontSquare(
+            out GridPosition bestBottomLeft,
+            out GridPosition bestTopRight)
+        {
+            var frontCells = new HashSet<GridPosition>();
+            foreach (GridPosition cell in bodyCells)
+            {
+                // The exposed top row is reserved for OvenAbove.
+                if (bodyCells.Contains(cell + new GridPosition(0, 1)))
+                {
+                    frontCells.Add(cell);
+                }
+            }
+
+            return TryFindLargestFilledSquare(
+                frontCells,
+                out bestBottomLeft,
+                out bestTopRight);
+        }
+
+        private bool TryFindLargestFilledSquare(
+            HashSet<GridPosition> cells,
+            out GridPosition bestBottomLeft,
+            out GridPosition bestTopRight)
+        {
+            bestBottomLeft = default;
+            bestTopRight = default;
+            if (cells.Count == 0)
+            {
+                return false;
+            }
+
+            int minX = int.MaxValue;
+            int maxX = int.MinValue;
+            int minY = int.MaxValue;
+            int maxY = int.MinValue;
+            foreach (GridPosition cell in cells)
+            {
+                minX = Mathf.Min(minX, cell.X);
+                maxX = Mathf.Max(maxX, cell.X);
+                minY = Mathf.Min(minY, cell.Y);
+                maxY = Mathf.Max(maxY, cell.Y);
+            }
+
+            int largestPossibleSize = Mathf.Min(maxX - minX + 1, maxY - minY + 1);
+            float bestDistanceToOrigin = float.MaxValue;
+            for (int size = largestPossibleSize; size >= 1; size--)
+            {
+                bool foundAtThisSize = false;
+                for (int bottom = minY; bottom + size - 1 <= maxY; bottom++)
+                {
+                    for (int left = minX; left + size - 1 <= maxX; left++)
+                    {
+                        int right = left + size - 1;
+                        int top = bottom + size - 1;
+                        if (!IsRectangleFilled(cells, left, right, bottom, top))
+                        {
+                            continue;
+                        }
+
+                        float centerX = (left + right) * 0.5f;
+                        float centerY = (bottom + top) * 0.5f;
+                        float distanceToOrigin = (centerX - origin.X) * (centerX - origin.X)
+                            + (centerY - origin.Y) * (centerY - origin.Y);
+                        if (foundAtThisSize && distanceToOrigin >= bestDistanceToOrigin)
+                        {
+                            continue;
+                        }
+
+                        foundAtThisSize = true;
+                        bestDistanceToOrigin = distanceToOrigin;
+                        bestBottomLeft = new GridPosition(left, bottom);
+                        bestTopRight = new GridPosition(right, top);
+                    }
+                }
+
+                if (foundAtThisSize)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private int GetHighestBodySortingOrder()
         {
             int highestOrder = ActorSortingOrderBase;
@@ -1084,9 +1298,20 @@ namespace OopsItAte.Actors
             out GridPosition bestBottomLeft,
             out GridPosition bestTopRight)
         {
+            return TryFindLargestFilledRectangle(
+                bodyCells,
+                out bestBottomLeft,
+                out bestTopRight);
+        }
+
+        private bool TryFindLargestFilledRectangle(
+            HashSet<GridPosition> cells,
+            out GridPosition bestBottomLeft,
+            out GridPosition bestTopRight)
+        {
             bestBottomLeft = default;
             bestTopRight = default;
-            if (bodyCells.Count == 0)
+            if (cells.Count == 0)
             {
                 return false;
             }
@@ -1095,7 +1320,7 @@ namespace OopsItAte.Actors
             int maxX = int.MinValue;
             int minY = int.MaxValue;
             int maxY = int.MinValue;
-            foreach (GridPosition cell in bodyCells)
+            foreach (GridPosition cell in cells)
             {
                 minX = Mathf.Min(minX, cell.X);
                 maxX = Mathf.Max(maxX, cell.X);
@@ -1114,7 +1339,8 @@ namespace OopsItAte.Actors
                         for (int right = left; right <= maxX; right++)
                         {
                             int area = (right - left + 1) * (top - bottom + 1);
-                            if (area < bestArea || !IsBodyRectangleFilled(left, right, bottom, top))
+                            if (area < bestArea
+                                || !IsRectangleFilled(cells, left, right, bottom, top))
                             {
                                 continue;
                             }
@@ -1140,13 +1366,18 @@ namespace OopsItAte.Actors
             return bestArea > 0;
         }
 
-        private bool IsBodyRectangleFilled(int left, int right, int bottom, int top)
+        private static bool IsRectangleFilled(
+            HashSet<GridPosition> cells,
+            int left,
+            int right,
+            int bottom,
+            int top)
         {
             for (int y = bottom; y <= top; y++)
             {
                 for (int x = left; x <= right; x++)
                 {
-                    if (!bodyCells.Contains(new GridPosition(x, y)))
+                    if (!cells.Contains(new GridPosition(x, y)))
                     {
                         return false;
                     }
@@ -1165,6 +1396,17 @@ namespace OopsItAte.Actors
 
             Destroy(bigPetFaceVisual);
             bigPetFaceVisual = null;
+        }
+
+        private void DestroyBigOvenVisualRoot()
+        {
+            if (bigOvenVisualRoot == null)
+            {
+                return;
+            }
+
+            Destroy(bigOvenVisualRoot);
+            bigOvenVisualRoot = null;
         }
 
         private Sprite GetBigPetSprite(GridPosition cell)

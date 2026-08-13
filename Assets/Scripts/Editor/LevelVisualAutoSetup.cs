@@ -34,6 +34,13 @@ namespace OopsItAte.Editor
             "bigDogFace2x1Horizontal"
         };
 
+        private static readonly string[] KitchenSpriteFields =
+        {
+            "ovenBackground",
+            "ovenAbove",
+            "ovenFront"
+        };
+
         internal static void ApplyFromSceneOne(LevelSceneSettings settings)
         {
             if (settings == null || Application.isPlaying)
@@ -78,6 +85,11 @@ namespace OopsItAte.Editor
                 KitchenStation[] targetKitchens = FindInScene<KitchenStation>(targetScene);
                 for (int i = 0; i < targetKitchens.Length; i++)
                 {
+                    CopySerializedObjectFields(
+                        sourceKitchen,
+                        targetKitchens[i],
+                        KitchenSpriteFields,
+                        "Setup Oven Tiles");
                     ApplyChildVisual(
                         sourceKitchen.transform.Find("KitchenVisual"),
                         targetKitchens[i].transform,
@@ -127,6 +139,30 @@ namespace OopsItAte.Editor
             if (normalVisual != null && visual != null)
             {
                 normalVisual.objectReferenceValue = visual.gameObject;
+            }
+
+            targetObject.ApplyModifiedProperties();
+            EditorUtility.SetDirty(target);
+        }
+
+        private static void CopySerializedObjectFields(
+            UnityEngine.Object source,
+            UnityEngine.Object target,
+            string[] fieldNames,
+            string undoName)
+        {
+            SerializedObject sourceObject = new SerializedObject(source);
+            SerializedObject targetObject = new SerializedObject(target);
+            Undo.RecordObject(target, undoName);
+
+            for (int i = 0; i < fieldNames.Length; i++)
+            {
+                SerializedProperty sourceProperty = sourceObject.FindProperty(fieldNames[i]);
+                SerializedProperty targetProperty = targetObject.FindProperty(fieldNames[i]);
+                if (sourceProperty != null && targetProperty != null)
+                {
+                    targetProperty.objectReferenceValue = sourceProperty.objectReferenceValue;
+                }
             }
 
             targetObject.ApplyModifiedProperties();
