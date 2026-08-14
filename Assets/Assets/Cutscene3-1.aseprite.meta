@@ -1,5 +1,5 @@
 fileFormatVersion: 2
-guid: 7894b12be3dafee48b6aaa89c06bde1f
+guid: 52515c636bd67934fb84825fd9c06196
 ScriptedImporter:
   internalIDToNameTable: []
   externalObjects: {}
@@ -127,9 +127,9 @@ ScriptedImporter:
     tessellationDetail: 0
     uvTransform: {x: 0, y: 0}
   animatedSpriteImportData:
-  - name: OvenAbove
+  - name: Cutscene3-1
     originalName: 
-    pivot: {x: 0.5, y: -1.6666667}
+    pivot: {x: 0.49999997, y: -0.35897437}
     alignment: 9
     border: {x: 0, y: 0, z: 0, w: 0}
     customData: 
@@ -137,9 +137,9 @@ ScriptedImporter:
       serializedVersion: 2
       x: 4
       y: 4
-      width: 32
-      height: 12
-    spriteID: 8861f92da912e6f47bc2e8a4e433e373
+      width: 128
+      height: 78
+    spriteID: 7379ebe993ce59b48ad780d36f81f583
     spriteBone: []
     spriteOutline: []
     vertices: []
@@ -153,25 +153,25 @@ ScriptedImporter:
   asepriteLayers:
   - layerIndex: 0
     uuid:
-      value0: 734209169
+      value0: 3338971235
       value1: 0
       value2: 0
       value3: 0
     guid: 0
-    name: OvenAbove
+    name: Cutscene3-1
     layerFlags: 0
     layerType: 0
     blendMode: 0
     cells:
-    - name: OvenAbove
+    - name: Cutscene3-1
       frameIndex: 0
       additiveSortOrder: 0
       cellRect:
-        x: 0
-        y: 20
-        width: 32
-        height: 12
-      spriteId: 8861f92da912e6f47bc2e8a4e433e373
+        x: 32
+        y: 28
+        width: 128
+        height: 78
+      spriteId: 7379ebe993ce59b48ad780d36f81f583
     linkedCells: []
     tileCells: []
     tileSetIndex: 0
@@ -181,5 +181,5 @@ ScriptedImporter:
   generatePhysicsShape: 0
   secondarySpriteTextures: []
   spritePackingTag: 
-  canvasSize: {x: 32, y: 32}
-  previousTextureSize: {x: 64, y: 32}
+  canvasSize: {x: 192, y: 108}
+  previousTextureSize: {x: 256, y: 128}
