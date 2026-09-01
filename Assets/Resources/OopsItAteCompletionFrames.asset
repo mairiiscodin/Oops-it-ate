@@ -47,5 +47,5 @@ MonoBehaviour:
   - {fileID: -2248906404995919409, guid: 75325b7d7c76c494d985727ec8adbff7, type: 3}
   - {fileID: 6710553572021608684, guid: 75325b7d7c76c494d985727ec8adbff7, type: 3}
   - {fileID: -5607408700983123231, guid: 75325b7d7c76c494d985727ec8adbff7, type: 3}
-  framesPerSecond: 12
-  finalFrameHold: 0.45
+  framesPerSecond: 20
+  finalFrameHold: 0.2

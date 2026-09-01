@@ -111,6 +111,13 @@ namespace OopsItAte.Actors
             hasBeenFed = true;
         }
 
+        public void RestoreFedState()
+        {
+            hasBeenFed = true;
+            becameFat = true;
+            Redraw();
+        }
+
         public void ConfigureOvenSprites(Sprite background, Sprite above, Sprite front)
         {
             ovenBackground = background;

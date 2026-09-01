@@ -2,6 +2,7 @@ using OopsItAte.Grid;
 using OopsItAte.Interaction;
 using OopsItAte.Levels;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 namespace OopsItAte.Input
 {
@@ -26,6 +27,12 @@ namespace OopsItAte.Input
 
         private void Update()
         {
+            if (UnityEngine.Input.GetKeyDown(KeyCode.R))
+            {
+                ResetCurrentRoom();
+                return;
+            }
+
             GridPosition? pressedDirection = ReadMovementDirection();
 
             if (mover.IsMoving)
@@ -54,6 +61,16 @@ namespace OopsItAte.Input
             {
                 interactor.TryInteract();
             }
+        }
+
+        private static void ResetCurrentRoom()
+        {
+            string roomId = string.IsNullOrWhiteSpace(GameSession.CurrentRoomId)
+                ? SceneManager.GetActiveScene().name
+                : GameSession.CurrentRoomId;
+            GameSession.ResetRoom(roomId);
+            Time.timeScale = 1f;
+            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         }
 
         private static GridPosition? ReadMovementDirection()

@@ -91,6 +91,77 @@ namespace OopsItAte.Editor
                 }
             }
 
+            DrawDirectionalResizeControls(settings);
+        }
+
+        private void DrawDirectionalResizeControls(LevelSceneSettings settings)
+        {
+            EditorGUILayout.Space(3f);
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
+                EditorGUILayout.LabelField("Resize From Edge", EditorStyles.miniBoldLabel);
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("- Top", GUILayout.Width(58f)))
+                    {
+                        ResizeFromEdge(settings, ResizeEdge.Top, -1);
+                    }
+                    if (GUILayout.Button("+ Top", GUILayout.Width(58f)))
+                    {
+                        ResizeFromEdge(settings, ResizeEdge.Top, 1);
+                    }
+                    GUILayout.FlexibleSpace();
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    if (GUILayout.Button("- Left", GUILayout.Width(58f)))
+                    {
+                        ResizeFromEdge(settings, ResizeEdge.Left, -1);
+                    }
+                    if (GUILayout.Button("+ Left", GUILayout.Width(58f)))
+                    {
+                        ResizeFromEdge(settings, ResizeEdge.Left, 1);
+                    }
+
+                    GUILayout.FlexibleSpace();
+                    GUILayout.Label("Map", EditorStyles.centeredGreyMiniLabel, GUILayout.Width(40f));
+                    GUILayout.FlexibleSpace();
+
+                    if (GUILayout.Button("- Right", GUILayout.Width(62f)))
+                    {
+                        ResizeFromEdge(settings, ResizeEdge.Right, -1);
+                    }
+                    if (GUILayout.Button("+ Right", GUILayout.Width(62f)))
+                    {
+                        ResizeFromEdge(settings, ResizeEdge.Right, 1);
+                    }
+                }
+
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.FlexibleSpace();
+                    if (GUILayout.Button("- Bottom", GUILayout.Width(68f)))
+                    {
+                        ResizeFromEdge(settings, ResizeEdge.Bottom, -1);
+                    }
+                    if (GUILayout.Button("+ Bottom", GUILayout.Width(68f)))
+                    {
+                        ResizeFromEdge(settings, ResizeEdge.Bottom, 1);
+                    }
+                    GUILayout.FlexibleSpace();
+                }
+            }
+        }
+
+        private enum ResizeEdge
+        {
+            Top,
+            Bottom,
+            Left,
+            Right
         }
 
         private void DrawPalette()
@@ -539,6 +610,64 @@ namespace OopsItAte.Editor
             }
 
             ApplyMap(settings, cells.Select(row => new string(row)).ToArray(), "Resize Level Map");
+        }
+
+        private void ResizeFromEdge(LevelSceneSettings settings, ResizeEdge edge, int delta)
+        {
+            string[] oldRows = GetFixedRows(settings, out int width, out int height);
+            if (oldRows.Length == 0)
+            {
+                CreateRoom(settings, Mathf.Max(3, requestedWidth), Mathf.Max(3, requestedHeight));
+                return;
+            }
+
+            bool vertical = edge == ResizeEdge.Top || edge == ResizeEdge.Bottom;
+            if (delta < 0 && (vertical ? height : width) <= 1)
+            {
+                return;
+            }
+
+            var rows = new List<string>(oldRows);
+            if (vertical)
+            {
+                if (delta > 0)
+                {
+                    string emptyRow = new string(' ', width);
+                    if (edge == ResizeEdge.Top) rows.Insert(0, emptyRow);
+                    else rows.Add(emptyRow);
+                }
+                else if (edge == ResizeEdge.Top)
+                {
+                    rows.RemoveAt(0);
+                }
+                else
+                {
+                    rows.RemoveAt(rows.Count - 1);
+                }
+            }
+            else
+            {
+                for (int row = 0; row < rows.Count; row++)
+                {
+                    if (delta > 0)
+                    {
+                        rows[row] = edge == ResizeEdge.Left
+                            ? " " + rows[row]
+                            : rows[row] + " ";
+                    }
+                    else
+                    {
+                        rows[row] = edge == ResizeEdge.Left
+                            ? rows[row].Substring(1)
+                            : rows[row].Substring(0, rows[row].Length - 1);
+                    }
+                }
+            }
+
+            ApplyMap(settings, rows.ToArray(), $"Resize Level From {edge}");
+            requestedWidth = vertical ? width : width + delta;
+            requestedHeight = vertical ? height + delta : height;
+            Repaint();
         }
 
         private static void SetCell(LevelSceneSettings settings, string[] rows, int row, int x, char tile)

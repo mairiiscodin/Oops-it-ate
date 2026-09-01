@@ -1,5 +1,9 @@
 using System.Collections;
+using System.Collections.Generic;
 using OopsItAte.Actors;
+using OopsItAte.Grid;
+using OopsItAte.Input;
+using OopsItAte.Interaction;
 using UnityEngine;
 
 #if UNITY_EDITOR
@@ -18,22 +22,61 @@ namespace OopsItAte.Levels
 
         private PetBody[] pets;
         private RoomCompletionAnimationData animationData;
+        private string roomId;
         private bool hasPlayed;
+        private KeyboardGridInput gameplayInput;
+        private GridMover playerMover;
+        private GameObject animationVisual;
+        private float timeScaleBeforeAnimation = 1f;
+        private bool pausedGameplay;
+        private bool gameplayInputWasEnabled;
 
-        public void Initialize(PetBody[] scenePets)
+        public void Initialize(PetBody[] scenePets, string currentRoomId)
         {
-            pets = scenePets;
+            var actualPets = new List<PetBody>();
+            if (scenePets != null)
+            {
+                for (int i = 0; i < scenePets.Length; i++)
+                {
+                    PetBody pet = scenePets[i];
+                    if (pet != null && pet.GetComponent<KitchenStation>() == null)
+                    {
+                        actualPets.Add(pet);
+                    }
+                }
+            }
+
+            pets = actualPets.ToArray();
+            roomId = currentRoomId;
+            hasPlayed = GameSession.HasRoomCompletionPlayed(roomId);
             animationData = Resources.Load<RoomCompletionAnimationData>(ResourceName);
+            gameplayInput = FindAnyObjectByType<KeyboardGridInput>();
+            playerMover = FindAnyObjectByType<GridMover>();
+        }
+
+        private void OnDisable()
+        {
+            ResumeGameplay();
+            if (animationVisual != null)
+            {
+                Destroy(animationVisual);
+                animationVisual = null;
+            }
         }
 
         private void Update()
         {
-            if (hasPlayed || pets == null || pets.Length == 0 || !HaveAllPetsBeenFed())
+            if (hasPlayed
+                || pets == null
+                || pets.Length == 0
+                || !HaveAllPetsBeenFed()
+                || (playerMover != null && playerMover.IsMoving))
             {
                 return;
             }
 
             hasPlayed = true;
+            GameSession.MarkRoomCompletionPlayed(roomId);
             StartCoroutine(PlayCompletionAnimation());
         }
 
@@ -59,18 +102,28 @@ namespace OopsItAte.Levels
                 yield break;
             }
 
+            PauseGameplay();
             Camera camera = Camera.main;
-            GameObject visual = new GameObject("Oops It Ate Completion Animation");
-            SpriteRenderer renderer = visual.AddComponent<SpriteRenderer>();
+            animationVisual = new GameObject("Oops It Ate Completion Animation");
+            SpriteRenderer renderer = animationVisual.AddComponent<SpriteRenderer>();
             renderer.sortingOrder = short.MaxValue;
 
             if (camera != null)
             {
-                visual.transform.SetParent(camera.transform, false);
-                visual.transform.localPosition = new Vector3(0f, 0f, camera.nearClipPlane + 1f);
+                animationVisual.transform.SetParent(camera.transform, false);
                 float visibleWorldHeight = camera.orthographicSize * 2f;
                 float scale = visibleWorldHeight * 0.72f / SourceCanvasHeightInWorldUnits;
-                visual.transform.localScale = Vector3.one * scale;
+                animationVisual.transform.localScale = Vector3.one * scale;
+
+                // Aseprite trims transparent pixels while preserving the original
+                // canvas through an offset pivot. Offset the whole sequence by the
+                // final logo's visual center so the authored motion stays intact
+                // and the completed "Oops I Ate" image lands at screen center.
+                Vector3 logoCenter = frames[frames.Length - 1].bounds.center * scale;
+                animationVisual.transform.localPosition = new Vector3(
+                    -logoCenter.x,
+                    -logoCenter.y,
+                    camera.nearClipPlane + 1f);
             }
 
             float framesPerSecond = animationData != null
@@ -91,7 +144,42 @@ namespace OopsItAte.Levels
                 yield return new WaitForSecondsRealtime(finalFrameHold);
             }
 
-            Destroy(visual);
+            Destroy(animationVisual);
+            animationVisual = null;
+            ResumeGameplay();
+        }
+
+        private void PauseGameplay()
+        {
+            if (pausedGameplay)
+            {
+                return;
+            }
+
+            pausedGameplay = true;
+            timeScaleBeforeAnimation = Time.timeScale;
+            Time.timeScale = 0f;
+            if (gameplayInput != null)
+            {
+                gameplayInputWasEnabled = gameplayInput.enabled;
+                gameplayInput.enabled = false;
+            }
+        }
+
+        private void ResumeGameplay()
+        {
+            if (!pausedGameplay)
+            {
+                return;
+            }
+
+            Time.timeScale = timeScaleBeforeAnimation;
+            if (gameplayInput != null)
+            {
+                gameplayInput.enabled = gameplayInputWasEnabled;
+            }
+
+            pausedGameplay = false;
         }
 
         private Sprite[] GetFrames()

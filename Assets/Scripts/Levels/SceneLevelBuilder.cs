@@ -82,7 +82,7 @@ namespace OopsItAte.Levels
             interactor.Initialize(player, inventory, kitchen, pets, boxes);
             input = CreateInput(player, interactor, exitController);
             completionAnimation = gameObject.AddComponent<RoomCompletionAnimation>();
-            completionAnimation.Initialize(pets);
+            completionAnimation.Initialize(pets, settings.RoomId);
             SetupCamera();
         }
 
@@ -152,6 +152,12 @@ namespace OopsItAte.Levels
                     position = savedPosition;
                 }
                 pets[i].Initialize(gridWorld, position);
+
+                if (pets[i].GetComponent<KitchenStation>() == null
+                    && GameSession.HasPetBeenFed(settings.RoomId, pets[i].name))
+                {
+                    pets[i].RestoreFedState();
+                }
             }
         }
 

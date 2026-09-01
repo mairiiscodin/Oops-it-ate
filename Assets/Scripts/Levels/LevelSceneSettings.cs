@@ -170,33 +170,24 @@ namespace OopsItAte.Levels
             int first = 0;
             int last = allRows.Length - 1;
 
-            while (first <= last && string.IsNullOrWhiteSpace(allRows[first])) first++;
-            while (last >= first && string.IsNullOrWhiteSpace(allRows[last])) last--;
+            // A whitespace-only row is a valid empty row in the Level Painter.
+            // ResizeMap uses those rows to preserve the requested Y size, so only
+            // discard truly empty lines introduced by leading/trailing newlines.
+            while (first <= last && allRows[first].Length == 0) first++;
+            while (last >= first && allRows[last].Length == 0) last--;
 
             if (first > last)
             {
                 return System.Array.Empty<string>();
             }
 
-            int commonIndent = int.MaxValue;
-            for (int i = first; i <= last; i++)
-            {
-                if (string.IsNullOrWhiteSpace(allRows[i]))
-                {
-                    continue;
-                }
-
-                int indent = 0;
-                while (indent < allRows[i].Length && char.IsWhiteSpace(allRows[i][indent])) indent++;
-                commonIndent = Mathf.Min(commonIndent, indent);
-            }
-
-            commonIndent = commonIndent == int.MaxValue ? 0 : commonIndent;
             string[] rows = new string[last - first + 1];
             for (int i = 0; i < rows.Length; i++)
             {
-                string row = allRows[first + i];
-                rows[i] = row.Length >= commonIndent ? row.Substring(commonIndent) : string.Empty;
+                // Leading spaces are real empty columns. In particular, the
+                // Level Painter's "+ Left" resize action must not be mistaken
+                // for formatting indentation and stripped away here.
+                rows[i] = allRows[first + i];
             }
 
             return rows;

@@ -150,6 +150,10 @@ namespace OopsItAte.Levels
                         roomId,
                         $"Pet:{pets[i].name}",
                         pets[i].Origin);
+                    GameSession.SavePetFedState(
+                        roomId,
+                        pets[i].name,
+                        pets[i].HasBeenFed);
                 }
             }
         }

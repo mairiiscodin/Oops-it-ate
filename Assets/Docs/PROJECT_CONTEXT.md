@@ -42,7 +42,12 @@ S / Down Arrow   : đi Nam
 A / Left Arrow   : đi Tây
 D / Right Arrow  : đi Đông
 J                 : tương tác / lấy thức ăn / cho ăn
+R                 : reset room hiện tại về trạng thái ban đầu
 ```
+
+Reset bằng `R` xóa state theo scope của room hiện tại (vị trí Pet/Box, Pet đã ăn,
+door đã unlock và animation hoàn thành), bỏ food đang cầm rồi reload scene. State của
+các room khác trong cùng tiến trình chơi được giữ nguyên.
 
 Player hiện chỉ nhận input di chuyển 4 hướng. Thuật toán **phồng và đẩy** vẫn hỗ trợ đủ 8 hướng.
 
@@ -321,7 +326,26 @@ State reset bởi `RuntimeInitializeOnLoadMethod(BeforeSceneLoad)` khi bắt đ�
 
 File liên quan: `Assets/Scripts/Levels/GameSession.cs`.
 
-## 15. Checklist kiểm tra trước khi bàn giao
+## 15. Animation hoàn thành khi tất cả Pet đã ăn
+
+Gameplay level tự theo dõi trạng thái đã ăn của các Pet (không tính Oven). Khi Pet cuối cùng
+được cho ăn thành công, `RoomCompletionAnimation` phát các frame `OopsIAte` ở giữa camera,
+tạm đặt `Time.timeScale = 0` và khóa `KeyboardGridInput`. Animation dùng realtime nên vẫn chạy
+khi gameplay pause; hết animation sẽ phục hồi time scale trước đó và bật lại input. Nếu lần ăn
+cuối đang đẩy Player, animation đợi movement visual kết thúc rồi mới pause và xuất hiện.
+
+Trạng thái `HasBeenFed` của từng Pet được lưu theo room và tên object trong `GameSession` khi
+chuyển scene. Khi quay lại room trong cùng tiến trình chơi, Pet đã ăn được khôi phục ở trạng thái
+1x1 FatDog và vẫn được tính là đã ăn. Animation hoàn thành không phát lại khi quay lại room đã
+hoàn thành. `StartNewGame` xóa các trạng thái này cùng session còn lại.
+
+File liên quan:
+
+- `Assets/Scripts/Levels/RoomCompletionAnimation.cs`
+- `Assets/Resources/OopsItAteCompletionFrames.asset`
+- `Assets/Scripts/Levels/GameSession.cs`
+
+## 16. Checklist kiểm tra trước khi bàn giao
 
 - [ ] Project mở bằng Unity `6000.4.0f1`.
 - [ ] Không có compiler error trong Console.
@@ -338,7 +362,7 @@ File liên quan: `Assets/Scripts/Levels/GameSession.cs`.
 - [ ] Kiểm tra `git diff` chỉ chứa thay đổi đúng phạm vi.
 - [ ] Cập nhật file context/testcase nếu quyết định gameplay thay đổi.
 
-## 16. Prompt gợi ý khi chuyển sang agent khác
+## 17. Prompt gợi ý khi chuyển sang agent khác
 
 ```text
 Hãy đọc toàn bộ Assets/Docs/PROJECT_CONTEXT.md trước, sau đó đọc các tài liệu mà file đó liên kết cho phần việc liên quan. Kiểm tra git status và code hiện tại trước khi sửa; không giả định lịch sử chat cũ có sẵn. Khi thay đổi luật gameplay, cập nhật cả code và testcase Markdown tương ứng, rồi kiểm tra trong Unity 6000.4.0f1.

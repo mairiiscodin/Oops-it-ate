@@ -47,6 +47,33 @@ namespace OopsItAte.Levels
             CurrentRoomId = Normalize(roomId);
         }
 
+        public static void ResetRoom(string roomId)
+        {
+            string prefix = Normalize(roomId) + "::";
+            unlockedDoors.RemoveWhere(key => key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+            flags.RemoveWhere(key => key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase));
+
+            var positionKeys = new List<string>();
+            foreach (string key in objectPositions.Keys)
+            {
+                if (key.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                {
+                    positionKeys.Add(key);
+                }
+            }
+
+            for (int i = 0; i < positionKeys.Count; i++)
+            {
+                objectPositions.Remove(positionKeys[i]);
+            }
+
+            HasFood = false;
+            hasPendingArrival = false;
+            pendingSourceRoomId = string.Empty;
+            pendingSourceSceneName = string.Empty;
+            pendingTargetDoorId = string.Empty;
+        }
+
         public static void BeginRoomTransition(
             string sourceRoomId,
             string sourceSceneName,
@@ -112,6 +139,28 @@ namespace OopsItAte.Levels
             out GridPosition position)
         {
             return objectPositions.TryGetValue(GetScopedKey(roomId, objectId), out position);
+        }
+
+        public static void SavePetFedState(string roomId, string petId, bool hasBeenFed)
+        {
+            string key = GetScopedKey(roomId, $"PetFed:{petId}");
+            if (hasBeenFed) flags.Add(key);
+            else flags.Remove(key);
+        }
+
+        public static bool HasPetBeenFed(string roomId, string petId)
+        {
+            return flags.Contains(GetScopedKey(roomId, $"PetFed:{petId}"));
+        }
+
+        public static void MarkRoomCompletionPlayed(string roomId)
+        {
+            flags.Add(GetScopedKey(roomId, "RoomCompletionPlayed"));
+        }
+
+        public static bool HasRoomCompletionPlayed(string roomId)
+        {
+            return flags.Contains(GetScopedKey(roomId, "RoomCompletionPlayed"));
         }
 
         public static void SetFlag(string flagId, bool value = true)
