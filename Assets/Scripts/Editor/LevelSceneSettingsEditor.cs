@@ -16,12 +16,18 @@ namespace OopsItAte.Editor
     {
         private const string PlayerPrefabPath = "Assets/Prefabs/Player.prefab";
         private const string TileThemePath = "Assets/Assets/Grid Tile Theme.asset";
-        private static readonly char[] Palette = { '.', '#', ' ', '_', 'S', 'K', 'P', 'B', '1', '2', '3', '4' };
+        private static readonly char[] Palette =
+        {
+            '.', '#', ' ', '_', 'S', 'K', 'P', 'B',
+            '1', '2', '3', '4', '5', '6', '7', '8', '9'
+        };
 
         private char selectedTile = '.';
         private Vector2 mapScroll;
         private int requestedWidth;
         private int requestedHeight;
+        private bool showSceneGrid = true;
+        private bool showSceneContents = true;
 
         private void OnEnable()
         {
@@ -46,6 +52,7 @@ namespace OopsItAte.Editor
 
             DrawSizeControls(settings);
             DrawPalette();
+            DrawScenePreviewControls();
             DrawMap(settings);
             DrawDoorLinks(settings);
             DrawActions(settings);
@@ -88,25 +95,277 @@ namespace OopsItAte.Editor
 
         private void DrawPalette()
         {
-            using (new EditorGUILayout.HorizontalScope())
+            GUILayout.Label("Brush");
+            const int brushesPerRow = 9;
+            for (int start = 0; start < Palette.Length; start += brushesPerRow)
             {
-                GUILayout.Label("Brush", GUILayout.Width(42f));
-                foreach (char tile in Palette)
+                using (new EditorGUILayout.HorizontalScope())
                 {
-                    Color previous = GUI.backgroundColor;
-                    if (tile == selectedTile)
+                    for (int i = start; i < Mathf.Min(start + brushesPerRow, Palette.Length); i++)
                     {
-                        GUI.backgroundColor = new Color(0.25f, 0.75f, 1f);
-                    }
+                        char tile = Palette[i];
+                        Color previous = GUI.backgroundColor;
+                        if (tile == selectedTile)
+                        {
+                            GUI.backgroundColor = new Color(0.25f, 0.75f, 1f);
+                        }
 
-                    if (GUILayout.Button(GetTileLabel(tile), GUILayout.Width(27f), GUILayout.Height(24f)))
-                    {
-                        selectedTile = tile;
-                    }
+                        if (GUILayout.Button(GetTileLabel(tile), GUILayout.Width(27f), GUILayout.Height(24f)))
+                        {
+                            selectedTile = tile;
+                        }
 
-                    GUI.backgroundColor = previous;
+                        GUI.backgroundColor = previous;
+                    }
                 }
             }
+        }
+
+        private void DrawScenePreviewControls()
+        {
+            EditorGUILayout.Space(3f);
+            EditorGUI.BeginChangeCheck();
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                GUILayout.Label("Scene Preview", GUILayout.Width(88f));
+                showSceneGrid = GUILayout.Toggle(showSceneGrid, "Grid", "Button");
+                showSceneContents = GUILayout.Toggle(showSceneContents, "Tiles & Doors", "Button");
+            }
+
+            if (EditorGUI.EndChangeCheck())
+            {
+                SceneView.RepaintAll();
+            }
+        }
+
+        private void OnSceneGUI()
+        {
+            LevelSceneSettings settings = (LevelSceneSettings)target;
+            string[] rows = GetFixedRows(settings, out int width, out int height);
+            if (rows.Length == 0 || width == 0 || height == 0)
+            {
+                return;
+            }
+
+            float cellSize = Mathf.Max(0.1f, settings.grid.cellSize);
+            float halfSize = cellSize * 0.5f;
+            Color oldColor = Handles.color;
+            var mapDoorPositions = new HashSet<GridPosition>();
+
+            for (int row = 0; row < height; row++)
+            {
+                int y = height - 1 - row;
+                for (int x = 0; x < width; x++)
+                {
+                    char tile = rows[row][x];
+                    Vector3 center = settings.grid.GridToWorld(new GridPosition(x, y));
+                    var corners = new[]
+                    {
+                        center + new Vector3(-halfSize, -halfSize, 0f),
+                        center + new Vector3(-halfSize, halfSize, 0f),
+                        center + new Vector3(halfSize, halfSize, 0f),
+                        center + new Vector3(halfSize, -halfSize, 0f)
+                    };
+
+                    Color fill = showSceneContents ? GetSceneTileColor(tile) : Color.clear;
+                    Color outline = showSceneGrid
+                        ? new Color(0.2f, 0.75f, 1f, 0.75f)
+                        : Color.clear;
+                    Handles.DrawSolidRectangleWithOutline(corners, fill, outline);
+
+                    if (!showSceneContents)
+                    {
+                        continue;
+                    }
+
+                    if (char.IsDigit(tile))
+                    {
+                        var doorPosition = new GridPosition(x, y);
+                        mapDoorPositions.Add(doorPosition);
+                        DrawMapDoorPreview(settings, rows, tile, doorPosition, center, cellSize);
+                    }
+                    else if (tile == 'S' || tile == 'K' || tile == 'P' || tile == 'B'
+                        || tile == '#' || tile == '_')
+                    {
+                        Handles.Label(
+                            center + Vector3.back * 0.01f,
+                            GetTileLabel(tile),
+                            GetSceneLabelStyle(tile));
+                    }
+                }
+            }
+
+            if (showSceneContents)
+            {
+                DrawSceneDoorObjects(settings, rows, cellSize, mapDoorPositions);
+            }
+
+            if (showSceneGrid)
+            {
+                DrawGridCoordinates(settings, width, height, cellSize);
+            }
+
+            Handles.color = oldColor;
+        }
+
+        private static void DrawMapDoorPreview(
+            LevelSceneSettings settings,
+            IReadOnlyList<string> rows,
+            char marker,
+            GridPosition position,
+            Vector3 center,
+            float cellSize)
+        {
+            DoorDirection direction = DoorDirection.Auto;
+            if (settings.TryGetDoorLink(marker, out LevelSceneSettings.DoorLink link))
+            {
+                direction = link.direction;
+            }
+            if (direction == DoorDirection.Auto)
+            {
+                direction = InferDoorDirection(rows, position);
+            }
+
+            DrawDoorVisual(settings.tileTheme, direction, marker.ToString(), center, cellSize);
+        }
+
+        private static void DrawSceneDoorObjects(
+            LevelSceneSettings settings,
+            IReadOnlyList<string> rows,
+            float cellSize,
+            ISet<GridPosition> mapDoorPositions)
+        {
+            DoorExit[] doors = UnityEngine.Object.FindObjectsByType<DoorExit>(
+                FindObjectsInactive.Include);
+            foreach (DoorExit door in doors)
+            {
+                if (door.gameObject.scene != settings.gameObject.scene)
+                {
+                    continue;
+                }
+
+                GridPosition position = settings.grid.WorldToGrid(door.transform.position);
+                if (mapDoorPositions.Contains(position))
+                {
+                    continue;
+                }
+
+                DoorDirection direction = door.OpeningDirection;
+                if (direction == DoorDirection.Auto)
+                {
+                    direction = InferDoorDirection(rows, position);
+                }
+
+                LevelMapObject mapObject = door.GetComponent<LevelMapObject>();
+                string label = mapObject != null && char.IsDigit(mapObject.Marker)
+                    ? mapObject.Marker.ToString()
+                    : door.gameObject.name;
+                DrawDoorVisual(
+                    settings.tileTheme,
+                    direction,
+                    label,
+                    door.transform.position,
+                    cellSize);
+            }
+        }
+
+        private static void DrawDoorVisual(
+            GridTileTheme theme,
+            DoorDirection direction,
+            string label,
+            Vector3 center,
+            float cellSize)
+        {
+            Sprite sprite = GetDoorSprite(theme, direction);
+
+            if (sprite != null && sprite.texture != null)
+            {
+                Vector2 topLeft = HandleUtility.WorldToGUIPoint(
+                    center + new Vector3(-cellSize * 0.46f, cellSize * 0.46f, 0f));
+                Vector2 bottomRight = HandleUtility.WorldToGUIPoint(
+                    center + new Vector3(cellSize * 0.46f, -cellSize * 0.46f, 0f));
+                Rect rect = Rect.MinMaxRect(
+                    Mathf.Min(topLeft.x, bottomRight.x),
+                    Mathf.Min(topLeft.y, bottomRight.y),
+                    Mathf.Max(topLeft.x, bottomRight.x),
+                    Mathf.Max(topLeft.y, bottomRight.y));
+                Rect textureRect = sprite.textureRect;
+                Rect uv = new Rect(
+                    textureRect.x / sprite.texture.width,
+                    textureRect.y / sprite.texture.height,
+                    textureRect.width / sprite.texture.width,
+                    textureRect.height / sprite.texture.height);
+
+                Handles.BeginGUI();
+                Color oldColor = GUI.color;
+                GUI.color = Color.white;
+                GUI.DrawTextureWithTexCoords(rect, sprite.texture, uv, true);
+                GUI.color = oldColor;
+                Handles.EndGUI();
+            }
+
+            Handles.Label(
+                center + new Vector3(cellSize * 0.25f, cellSize * 0.25f, -0.02f),
+                label,
+                GetSceneLabelStyle('1'));
+        }
+
+        private static Sprite GetDoorSprite(GridTileTheme theme, DoorDirection direction)
+        {
+            if (theme == null)
+            {
+                return null;
+            }
+
+            switch (direction)
+            {
+                case DoorDirection.Up: return theme.doorUp;
+                case DoorDirection.Down: return theme.doorDown;
+                case DoorDirection.Left: return theme.doorLeft;
+                case DoorDirection.Right: return theme.doorRight;
+                default: return null;
+            }
+        }
+
+        private static void DrawGridCoordinates(
+            LevelSceneSettings settings,
+            int width,
+            int height,
+            float cellSize)
+        {
+            GUIStyle style = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                normal = { textColor = new Color(0.45f, 0.85f, 1f, 0.9f) }
+            };
+
+            for (int x = 0; x < width; x++)
+            {
+                Vector3 top = settings.grid.GridToWorld(new GridPosition(x, height - 1));
+                Handles.Label(top + Vector3.up * cellSize * 0.62f, $"x{x}", style);
+            }
+            for (int y = 0; y < height; y++)
+            {
+                Vector3 left = settings.grid.GridToWorld(new GridPosition(0, y));
+                Handles.Label(left + Vector3.left * cellSize * 0.66f, $"y{y}", style);
+            }
+        }
+
+        private static GUIStyle GetSceneLabelStyle(char tile)
+        {
+            return new GUIStyle(EditorStyles.boldLabel)
+            {
+                alignment = TextAnchor.MiddleCenter,
+                fontSize = char.IsDigit(tile) ? 12 : 14,
+                normal = { textColor = char.IsDigit(tile) ? Color.white : GetTileColor(tile) }
+            };
+        }
+
+        private static Color GetSceneTileColor(char tile)
+        {
+            Color color = GetTileColor(tile);
+            color.a = tile == ' ' ? 0.015f : (char.IsDigit(tile) ? 0.2f : 0.1f);
+            return color;
         }
 
         private void DrawMap(LevelSceneSettings settings)
