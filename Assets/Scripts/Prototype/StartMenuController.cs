@@ -2,6 +2,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using OopsItAte.Levels;
 
 public class StartMenuController : MonoBehaviour
 {
@@ -23,6 +24,7 @@ public class StartMenuController : MonoBehaviour
 
     private void Awake()
     {
+        GameSession.StartNewGame();
         if (startButtonTransform != null)
         {
             startButtonInitialScale = startButtonTransform.localScale;

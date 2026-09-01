@@ -97,8 +97,9 @@ namespace OopsItAte.Editor
                 }
 
                 EditorSceneManager.MarkSceneDirty(targetScene);
+                EditorSceneManager.SaveScene(targetScene);
                 Debug.Log(
-                    $"Applied Scene 1 visuals to {targetPets.Length} pet(s) and {targetKitchens.Length} kitchen(s).",
+                    $"Applied and saved Scene 1 visuals to {targetPets.Length} pet(s) and {targetKitchens.Length} kitchen(s).",
                     settings);
             }
             finally
@@ -206,6 +207,19 @@ namespace OopsItAte.Editor
                     Undo.RecordObject(targetRenderer, $"Setup {visualName} Renderer");
                     EditorUtility.CopySerialized(sourceRenderer, targetRenderer);
                     EditorUtility.SetDirty(targetRenderer);
+                }
+
+                Animator sourceAnimator = sourceVisual.GetComponent<Animator>();
+                if (sourceAnimator != null)
+                {
+                    Animator targetAnimator = targetVisual.GetComponent<Animator>();
+                    if (targetAnimator == null)
+                    {
+                        targetAnimator = Undo.AddComponent<Animator>(targetVisual.gameObject);
+                    }
+                    Undo.RecordObject(targetAnimator, $"Setup {visualName} Animator");
+                    EditorUtility.CopySerialized(sourceAnimator, targetAnimator);
+                    EditorUtility.SetDirty(targetAnimator);
                 }
             }
 

@@ -92,16 +92,10 @@ namespace OopsItAte.Levels
 
         private GridMover CreatePlayer(GridWorld world)
         {
-            GameObject playerObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            var playerObject = new GameObject("Player");
             playerObject.name = "Player";
             playerObject.transform.SetParent(transform);
             playerObject.transform.localScale = Vector3.one * world.Settings.cellSize * 0.72f;
-
-            var renderer = playerObject.GetComponent<MeshRenderer>();
-            renderer.material = new Material(FindUnlitShader());
-            renderer.material.color = new Color(0.1f, 0.55f, 1f);
-
-            Destroy(playerObject.GetComponent<Collider>());
 
             var mover = playerObject.AddComponent<GridMover>();
             mover.Initialize(world, new GridPosition(level.playerStart.x, level.playerStart.y));
@@ -110,17 +104,11 @@ namespace OopsItAte.Levels
 
         private KitchenStation CreateKitchen(GridWorld world)
         {
-            GameObject kitchenObject = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            var kitchenObject = new GameObject("Kitchen");
             kitchenObject.name = "Kitchen";
             kitchenObject.transform.SetParent(transform);
             kitchenObject.transform.position = world.Settings.GridToWorld(ToGridPosition(level.kitchenPosition)) + Vector3.back * 0.25f;
             kitchenObject.transform.localScale = Vector3.one * world.Settings.cellSize;
-
-            var renderer = kitchenObject.GetComponent<MeshRenderer>();
-            renderer.material = new Material(FindUnlitShader());
-            renderer.material.color = new Color(1f, 0.65f, 0.1f);
-
-            Destroy(kitchenObject.GetComponent<Collider>());
 
             var station = kitchenObject.AddComponent<KitchenStation>();
             station.Initialize(world, ToGridPosition(level.kitchenPosition));
@@ -162,15 +150,9 @@ namespace OopsItAte.Levels
             }
 
             camera.orthographic = true;
-            camera.orthographicSize = Mathf.Max(level.grid.width, level.grid.height) * 0.65f;
             camera.transform.position = new Vector3(0f, 0f, -10f);
+            gridWorld.FitCameraToLoadedBounds();
         }
 
-        private static Shader FindUnlitShader()
-        {
-            return Shader.Find("Universal Render Pipeline/Unlit")
-                ?? Shader.Find("Unlit/Color")
-                ?? Shader.Find("Sprites/Default");
-        }
     }
 }

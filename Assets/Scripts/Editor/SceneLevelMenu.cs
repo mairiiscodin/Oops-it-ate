@@ -1,4 +1,5 @@
 using OopsItAte.Actors;
+using OopsItAte.Grid;
 using OopsItAte.Interaction;
 using OopsItAte.Levels;
 using UnityEditor;
@@ -8,11 +9,14 @@ namespace OopsItAte.Editor
 {
     public static class SceneLevelMenu
     {
+        private const string TileThemePath = "Assets/Assets/Grid Tile Theme.asset";
+
         [MenuItem("GameObject/Oops It Ate/Level Root", false, 10)]
         public static void CreateLevelRoot()
         {
             var level = new GameObject("Level");
-            level.AddComponent<LevelSceneSettings>();
+            LevelSceneSettings settings = level.AddComponent<LevelSceneSettings>();
+            settings.tileTheme = AssetDatabase.LoadAssetAtPath<GridTileTheme>(TileThemePath);
             level.AddComponent<SceneLevelBuilder>();
             Selection.activeGameObject = level;
         }
@@ -28,9 +32,8 @@ namespace OopsItAte.Editor
         [MenuItem("GameObject/Oops It Ate/Kitchen", false, 12)]
         public static void CreateKitchen()
         {
-            GameObject kitchen = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            var kitchen = new GameObject("Kitchen");
             kitchen.name = "Kitchen";
-            Object.DestroyImmediate(kitchen.GetComponent<Collider>());
             kitchen.AddComponent<KitchenStation>();
             Selection.activeGameObject = kitchen;
         }
@@ -46,14 +49,9 @@ namespace OopsItAte.Editor
         [MenuItem("GameObject/Oops It Ate/Wall Blocker", false, 14)]
         public static void CreateWallBlocker()
         {
-            GameObject wall = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            var wall = new GameObject("WallBlocker");
             wall.name = "WallBlocker";
-            Object.DestroyImmediate(wall.GetComponent<Collider>());
             wall.AddComponent<GridWall>();
-
-            var renderer = wall.GetComponent<MeshRenderer>();
-            renderer.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color"));
-            renderer.sharedMaterial.color = new Color(0.45f, 0.45f, 0.45f);
 
             Selection.activeGameObject = wall;
         }
@@ -61,14 +59,9 @@ namespace OopsItAte.Editor
         [MenuItem("GameObject/Oops It Ate/Pushable Box", false, 15)]
         public static void CreatePushableBox()
         {
-            GameObject box = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            var box = new GameObject("PushableBox");
             box.name = "PushableBox";
-            Object.DestroyImmediate(box.GetComponent<Collider>());
             box.AddComponent<PushableBox>();
-
-            var renderer = box.GetComponent<MeshRenderer>();
-            renderer.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color"));
-            renderer.sharedMaterial.color = new Color(0.62f, 0.36f, 0.16f);
 
             Selection.activeGameObject = box;
         }
@@ -76,14 +69,9 @@ namespace OopsItAte.Editor
         [MenuItem("GameObject/Oops It Ate/Door Exit", false, 16)]
         public static void CreateDoorExit()
         {
-            GameObject door = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            var door = new GameObject("DoorExit");
             door.name = "DoorExit";
-            Object.DestroyImmediate(door.GetComponent<Collider>());
             door.AddComponent<DoorExit>();
-
-            var renderer = door.GetComponent<MeshRenderer>();
-            renderer.sharedMaterial = new Material(Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color"));
-            renderer.sharedMaterial.color = new Color(0.9f, 0.15f, 0.15f);
 
             Selection.activeGameObject = door;
         }

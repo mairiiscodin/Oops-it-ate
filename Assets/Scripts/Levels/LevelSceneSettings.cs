@@ -1,6 +1,7 @@
 using OopsItAte.Grid;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace OopsItAte.Levels
@@ -15,6 +16,18 @@ namespace OopsItAte.Levels
 
             [Tooltip("Scene path selected by the level editor.")]
             public string targetScenePath = string.Empty;
+
+            [Tooltip("Direction the player travels through this door. Auto follows the map boundary.")]
+            public DoorDirection direction = DoorDirection.Auto;
+
+            [Tooltip("Unique ID of this door inside the room.")]
+            public string doorId = string.Empty;
+
+            [Tooltip("Door ID where the player should arrive in the target room.")]
+            public string targetDoorId = string.Empty;
+
+            public bool startsLocked;
+            public bool requiresFood;
 
             public char Marker => (char)('0' + Mathf.Clamp(marker, 1, 9));
 
@@ -39,6 +52,12 @@ namespace OopsItAte.Levels
 
         public GridSettings grid = new GridSettings();
         public GridTileTheme tileTheme;
+        [Tooltip("Stable adventure-room ID. Defaults to the scene name when empty.")]
+        public string roomId = string.Empty;
+
+        public string RoomId => string.IsNullOrWhiteSpace(roomId)
+            ? gameObject.scene.name
+            : roomId.Trim();
 
         [Tooltip("Use '.', '#', '_', S, K, P, B and 1-9. The first line is the top row.")]
         [TextArea(6, 20)]
@@ -72,6 +91,12 @@ namespace OopsItAte.Levels
 
             targetSceneName = string.Empty;
             return false;
+        }
+
+        public bool TryGetDoorLink(char marker, out DoorLink doorLink)
+        {
+            doorLink = doorLinks?.FirstOrDefault(link => link != null && link.Marker == marker);
+            return doorLink != null;
         }
 
         public bool TryReadTileMap(

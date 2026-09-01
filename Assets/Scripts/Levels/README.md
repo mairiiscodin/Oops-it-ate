@@ -15,7 +15,7 @@ Current slice: scene-based level setup with grid movement, kitchen, carried food
 1. Open `Tools > Oops It Ate > Open Level Painter`.
 2. Select a brush and click or drag over cells in the `Quick Level Painter` inspector.
 3. Use `S` for Player, `K` for Kitchen, one or more `P` markers for Pets, `B` for a pushable box, and `1` through `9` for doors.
-4. For each numbered door, drag its target Scene asset into `Door Targets`.
+4. For each numbered door, choose its target Scene, one-way `Open Direction`, stable `Door ID`, and the `Target Door ID` used as the arrival point in the next room. `Auto` follows the loaded floor beside the boundary door.
 5. Click `Sync Objects From Map` to move existing scene objects and create any missing objects.
 6. Click `Add Door Scenes To Build` once to add the current scene and all door targets to the Build Profile scene list.
 
@@ -64,7 +64,7 @@ At Play time, `SceneLevelBuilder` snaps those objects to the grid and creates th
 2. Add both scenes to `File > Build Profiles > Scene List`.
 3. In `Level_001`, create `GameObject > Oops It Ate > Door Exit`.
 4. Select the door and set `Target Scene Name` to `Level_002`.
-5. When the player steps onto the door, Unity loads `Level_002`.
+5. When the player approaches the door in its configured direction, Unity loads `Level_002`. Sideways and reverse approaches do not open it.
 6. The door occupies one grid cell. The target scene must be included in `Build Profiles > Scene List`.
 7. A door can be placed one cell outside the loaded grid as part of its boundary. Walking toward it changes scene; expanding that boundary moves the door outward with the edge.
 8. Feeding a boundary door grows it only along the wall edge, never inward or outward. Every grown door cell changes scene, and the newest growth layer burps away after 3 seconds.

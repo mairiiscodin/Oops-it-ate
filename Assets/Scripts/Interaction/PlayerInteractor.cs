@@ -1,7 +1,6 @@
 using OopsItAte.Actors;
 using OopsItAte.Grid;
 using OopsItAte.Levels;
-using System.Collections.Generic;
 using UnityEngine;
 
 namespace OopsItAte.Interaction
@@ -131,109 +130,14 @@ namespace OopsItAte.Interaction
 
         private void TryFeed(PetBody targetBody)
         {
-            GridPosition playerPositionBeforeGrowth = player.CurrentPosition;
-            if (!targetBody.TryFindGrowthPlan(
-                playerPositionBeforeGrowth,
-                player.CanMoveTo,
-                out List<GridPosition> growthCells,
-                out GridPosition pushDirection,
-                out bool shouldPushPlayer,
-                out List<PushableBoxMove> boxMoves,
-                out List<PetBodyMove> bodyMoves))
-            {
-                targetBody.BurpAndShrink();
-                inventory.TryUseFood();
-                return;
-            }
-
-            if (!TryApplyBoxMoves(boxMoves))
+            if (!BodyGrowthPlanner.TryBuild(targetBody, player, out BodyGrowthPlan plan))
             {
                 return;
             }
 
-            if (!TryApplyBodyMoves(bodyMoves))
+            if (plan.TryCommit(targetBody) && inventory.TryUseFood())
             {
-                RollbackBoxMoves(boxMoves);
-                return;
-            }
-
-            if (targetBody.TryGrow(growthCells))
-            {
-                if (shouldPushPlayer)
-                {
-                    player.MoveTo(player.CurrentPosition + pushDirection);
-                }
-
-                inventory.TryUseFood();
-            }
-            else
-            {
-                RollbackBodyMoves(bodyMoves);
-                RollbackBoxMoves(boxMoves);
-            }
-        }
-
-        private static bool TryApplyBodyMoves(IReadOnlyList<PetBodyMove> bodyMoves)
-        {
-            int movedCount = 0;
-            for (int i = 0; i < bodyMoves.Count; i++)
-            {
-                if (bodyMoves[i].Body.TryShift(bodyMoves[i].Direction))
-                {
-                    movedCount++;
-                    continue;
-                }
-
-                RollbackBodyMoves(bodyMoves, movedCount);
-                return false;
-            }
-
-            return true;
-        }
-
-        private static void RollbackBodyMoves(IReadOnlyList<PetBodyMove> bodyMoves)
-        {
-            RollbackBodyMoves(bodyMoves, bodyMoves.Count);
-        }
-
-        private static void RollbackBodyMoves(IReadOnlyList<PetBodyMove> bodyMoves, int movedCount)
-        {
-            for (int i = movedCount - 1; i >= 0; i--)
-            {
-                GridPosition direction = bodyMoves[i].Direction;
-                bodyMoves[i].Body.TryShift(new GridPosition(-direction.X, -direction.Y));
-            }
-        }
-
-        private static bool TryApplyBoxMoves(IReadOnlyList<PushableBoxMove> boxMoves)
-        {
-            int movedCount = 0;
-            for (int i = 0; i < boxMoves.Count; i++)
-            {
-                if (boxMoves[i].Box.TryMove(boxMoves[i].Direction))
-                {
-                    movedCount++;
-                    continue;
-                }
-
-                RollbackBoxMoves(boxMoves, movedCount);
-                return false;
-            }
-
-            return true;
-        }
-
-        private static void RollbackBoxMoves(IReadOnlyList<PushableBoxMove> boxMoves)
-        {
-            RollbackBoxMoves(boxMoves, boxMoves.Count);
-        }
-
-        private static void RollbackBoxMoves(IReadOnlyList<PushableBoxMove> boxMoves, int movedCount)
-        {
-            for (int i = movedCount - 1; i >= 0; i--)
-            {
-                GridPosition direction = boxMoves[i].Direction;
-                boxMoves[i].Box.TryMove(new GridPosition(-direction.X, -direction.Y));
+                targetBody.MarkFed();
             }
         }
     }

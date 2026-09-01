@@ -207,6 +207,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.DoorExit
   targetSceneName: 3
+  openingDirection: 0
+  upSprite: {fileID: -2955084659378984245, guid: 54637ed15fb51b443a88bae4896d09fe, type: 3}
+  downSprite: {fileID: -4672882131292808356, guid: 4e841154f852fb441a7234361d35282d, type: 3}
+  leftSprite: {fileID: -7732078956242957111, guid: 1343ddf78deea664faa4f0d0dea1b8c7, type: 3}
+  rightSprite: {fileID: -7072695414245721861, guid: 5a63e9c9b7ba4f14e86567c5be935731, type: 3}
   color: {r: 0.9, g: 0.15, b: 0.15, a: 1}
 --- !u!23 &424210234
 MeshRenderer:
@@ -307,7 +312,7 @@ Transform:
   m_GameObject: {fileID: 480840428}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 2, y: -1, z: 0}
+  m_LocalPosition: {x: 1, y: -2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -344,10 +349,10 @@ MonoBehaviour:
   canBePushedByBodyGrowth: 1
   normalVisual: {fileID: 1013612522}
   bigDogSide: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
-  bigDogOpen3ConnectedNorth: {fileID: 0}
-  bigDogOpen3ConnectedEast: {fileID: 0}
-  bigDogOpen3ConnectedSouth: {fileID: 0}
-  bigDogOpen3ConnectedWest: {fileID: 0}
+  bigDogOpen3ConnectedNorth: {fileID: 4965653968227792412, guid: 4e4d8c05ec65eaf44a01d20efe5db40b, type: 3}
+  bigDogOpen3ConnectedEast: {fileID: 1751097608498928227, guid: d9eca39cf2dc08f44ad6c9e8c84a03c3, type: 3}
+  bigDogOpen3ConnectedSouth: {fileID: 5768884981487863313, guid: e9b1dbd687ef1a243a0ad309972edc2f, type: 3}
+  bigDogOpen3ConnectedWest: {fileID: 9008817623733193801, guid: 810d46062e2438645933b0ab17561b9d, type: 3}
   bigDogNE: {fileID: 1669955001949877241, guid: b904f7e013f9b7c4b8601ff260e537e5, type: 3}
   bigDogES: {fileID: -5209184284951002492, guid: d4308b07e5eba4647832d860f6fda58e, type: 3}
   bigDogWN: {fileID: 4650782177985915308, guid: 3f66abfd812c1964d8f93a238aaebe42, type: 3}
@@ -356,9 +361,18 @@ MonoBehaviour:
   bigDogNEW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogNSW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogESW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
+  ovenBackground: {fileID: 0}
+  ovenAbove: {fileID: 0}
+  ovenFront: {fileID: 0}
+  bigDogFaceAnimation: {fileID: 7400000, guid: c8b2eddce22b9eb4487e7b4e16bfc7f3, type: 2}
   bigDogFace: {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
   bigDogFace1x2Vertical: {fileID: 0}
   bigDogFace2x1Horizontal: {fileID: 0}
+  bigDogFaceFallbackDuration: 1.1
+  resizeShakeDuration: 0.18
+  resizeShakeStrength: 0.06
+  resizeShakeFrequency: 36
+  bigDogFaceFrameData: {fileID: 11400000, guid: a74fd3cb5a7e0a841bdac3332b2a17cb, type: 2}
 --- !u!1 &704118395
 GameObject:
   m_ObjectHideFlags: 0
@@ -369,6 +383,7 @@ GameObject:
   m_Component:
   - component: {fileID: 704118396}
   - component: {fileID: 704118397}
+  - component: {fileID: 940410000001}
   m_Layer: 0
   m_Name: PetVisual
   m_TagString: Untagged
@@ -386,7 +401,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3.0075786, y: 3.0075786, z: 3.0075786}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1584382363}
@@ -483,6 +498,7 @@ GameObject:
   m_Component:
   - component: {fileID: 941339613}
   - component: {fileID: 941339614}
+  - component: {fileID: 940410000002}
   m_Layer: 0
   m_Name: PetVisual
   m_TagString: Untagged
@@ -500,7 +516,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3.0075786, y: 3.0075786, z: 3.0075786}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 1355551552}
@@ -574,6 +590,7 @@ GameObject:
   m_Component:
   - component: {fileID: 1013612523}
   - component: {fileID: 1013612524}
+  - component: {fileID: 940410000003}
   m_Layer: 0
   m_Name: PetVisual
   m_TagString: Untagged
@@ -591,7 +608,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 3.0075786, y: 3.0075786, z: 3.0075786}
+  m_LocalScale: {x: 3, y: 3, z: 3}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 480840429}
@@ -865,7 +882,7 @@ Transform:
   m_GameObject: {fileID: 1355551551}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 1, y: -2, z: 0}
+  m_LocalPosition: {x: -1, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -902,10 +919,10 @@ MonoBehaviour:
   canBePushedByBodyGrowth: 1
   normalVisual: {fileID: 941339612}
   bigDogSide: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
-  bigDogOpen3ConnectedNorth: {fileID: 0}
-  bigDogOpen3ConnectedEast: {fileID: 0}
-  bigDogOpen3ConnectedSouth: {fileID: 0}
-  bigDogOpen3ConnectedWest: {fileID: 0}
+  bigDogOpen3ConnectedNorth: {fileID: 4965653968227792412, guid: 4e4d8c05ec65eaf44a01d20efe5db40b, type: 3}
+  bigDogOpen3ConnectedEast: {fileID: 1751097608498928227, guid: d9eca39cf2dc08f44ad6c9e8c84a03c3, type: 3}
+  bigDogOpen3ConnectedSouth: {fileID: 5768884981487863313, guid: e9b1dbd687ef1a243a0ad309972edc2f, type: 3}
+  bigDogOpen3ConnectedWest: {fileID: 9008817623733193801, guid: 810d46062e2438645933b0ab17561b9d, type: 3}
   bigDogNE: {fileID: 1669955001949877241, guid: b904f7e013f9b7c4b8601ff260e537e5, type: 3}
   bigDogES: {fileID: -5209184284951002492, guid: d4308b07e5eba4647832d860f6fda58e, type: 3}
   bigDogWN: {fileID: 4650782177985915308, guid: 3f66abfd812c1964d8f93a238aaebe42, type: 3}
@@ -914,9 +931,18 @@ MonoBehaviour:
   bigDogNEW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogNSW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogESW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
+  ovenBackground: {fileID: 0}
+  ovenAbove: {fileID: 0}
+  ovenFront: {fileID: 0}
+  bigDogFaceAnimation: {fileID: 7400000, guid: c8b2eddce22b9eb4487e7b4e16bfc7f3, type: 2}
   bigDogFace: {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
   bigDogFace1x2Vertical: {fileID: 0}
   bigDogFace2x1Horizontal: {fileID: 0}
+  bigDogFaceFallbackDuration: 1.1
+  resizeShakeDuration: 0.18
+  resizeShakeStrength: 0.06
+  resizeShakeFrequency: 36
+  bigDogFaceFrameData: {fileID: 11400000, guid: a74fd3cb5a7e0a841bdac3332b2a17cb, type: 2}
 --- !u!21 &1356419737
 Material:
   serializedVersion: 8
@@ -1151,7 +1177,7 @@ Transform:
   m_GameObject: {fileID: 1584382362}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -1, y: -1, z: 0}
+  m_LocalPosition: {x: 2, y: -1, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -1188,10 +1214,10 @@ MonoBehaviour:
   canBePushedByBodyGrowth: 1
   normalVisual: {fileID: 704118395}
   bigDogSide: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
-  bigDogOpen3ConnectedNorth: {fileID: 0}
-  bigDogOpen3ConnectedEast: {fileID: 0}
-  bigDogOpen3ConnectedSouth: {fileID: 0}
-  bigDogOpen3ConnectedWest: {fileID: 0}
+  bigDogOpen3ConnectedNorth: {fileID: 4965653968227792412, guid: 4e4d8c05ec65eaf44a01d20efe5db40b, type: 3}
+  bigDogOpen3ConnectedEast: {fileID: 1751097608498928227, guid: d9eca39cf2dc08f44ad6c9e8c84a03c3, type: 3}
+  bigDogOpen3ConnectedSouth: {fileID: 5768884981487863313, guid: e9b1dbd687ef1a243a0ad309972edc2f, type: 3}
+  bigDogOpen3ConnectedWest: {fileID: 9008817623733193801, guid: 810d46062e2438645933b0ab17561b9d, type: 3}
   bigDogNE: {fileID: 1669955001949877241, guid: b904f7e013f9b7c4b8601ff260e537e5, type: 3}
   bigDogES: {fileID: -5209184284951002492, guid: d4308b07e5eba4647832d860f6fda58e, type: 3}
   bigDogWN: {fileID: 4650782177985915308, guid: 3f66abfd812c1964d8f93a238aaebe42, type: 3}
@@ -1200,9 +1226,18 @@ MonoBehaviour:
   bigDogNEW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogNSW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogESW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
+  ovenBackground: {fileID: 0}
+  ovenAbove: {fileID: 0}
+  ovenFront: {fileID: 0}
+  bigDogFaceAnimation: {fileID: 7400000, guid: c8b2eddce22b9eb4487e7b4e16bfc7f3, type: 2}
   bigDogFace: {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
   bigDogFace1x2Vertical: {fileID: 0}
   bigDogFace2x1Horizontal: {fileID: 0}
+  bigDogFaceFallbackDuration: 1.1
+  resizeShakeDuration: 0.18
+  resizeShakeStrength: 0.06
+  resizeShakeFrequency: 36
+  bigDogFaceFrameData: {fileID: 11400000, guid: a74fd3cb5a7e0a841bdac3332b2a17cb, type: 2}
 --- !u!1 &1797009539
 GameObject:
   m_ObjectHideFlags: 0
@@ -1266,6 +1301,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Interaction.KitchenStation
   color: {r: 1, g: 0.65, b: 0.1, a: 1}
   growableBody: {fileID: 0}
+  ovenBackground: {fileID: 2240339920060759967, guid: 05f92868674d2a94fb9d1202b837a915, type: 3}
+  ovenAbove: {fileID: -2251223810377589854, guid: 7894b12be3dafee48b6aaa89c06bde1f, type: 3}
+  ovenFront: {fileID: 4851746002876068271, guid: 6ab2a8b1952927741b63ede200bd21bd, type: 3}
 --- !u!23 &1797009543
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -1355,6 +1393,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.DoorExit
   targetSceneName: 5
+  openingDirection: 0
+  upSprite: {fileID: -2955084659378984245, guid: 54637ed15fb51b443a88bae4896d09fe, type: 3}
+  downSprite: {fileID: -4672882131292808356, guid: 4e841154f852fb441a7234361d35282d, type: 3}
+  leftSprite: {fileID: -7732078956242957111, guid: 1343ddf78deea664faa4f0d0dea1b8c7, type: 3}
+  rightSprite: {fileID: -7072695414245721861, guid: 5a63e9c9b7ba4f14e86567c5be935731, type: 3}
   color: {r: 0.9, g: 0.15, b: 0.15, a: 1}
 --- !u!23 &2136039172
 MeshRenderer:
@@ -1428,6 +1471,72 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!95 &940410000001
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 704118395}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1bf36fc50faf28a4599c9e7f25c7d537, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage:
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!95 &940410000002
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 941339612}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1bf36fc50faf28a4599c9e7f25c7d537, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage:
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!95 &940410000003
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1013612522}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1bf36fc50faf28a4599c9e7f25c7d537, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage:
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

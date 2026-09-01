@@ -4,10 +4,10 @@ namespace OopsItAte.Levels
 {
     public sealed class GridWall : MonoBehaviour
     {
-        private void OnDrawGizmos()
+        private void OnValidate()
         {
-            Gizmos.color = new Color(0.45f, 0.45f, 0.45f, 0.85f);
-            Gizmos.DrawCube(transform.position, Vector3.one);
+            MeshRenderer placeholder = GetComponent<MeshRenderer>();
+            if (placeholder != null) placeholder.enabled = false;
         }
     }
 }

@@ -49,6 +49,11 @@ namespace OopsItAte.Grid
             return !IsLoaded(position) || IsAuthoredWall(position) || IsDynamicBlocker(position);
         }
 
+        public bool IsTerrainBlocked(GridPosition position)
+        {
+            return !IsLoaded(position) || IsAuthoredWall(position);
+        }
+
         public bool IsLoaded(GridPosition position) => loadedCells.Contains(position);
         public bool IsAuthoredWall(GridPosition position) => authoredWalls.Contains(position);
         public bool IsBorder(GridPosition position) => borderCells.Contains(position);

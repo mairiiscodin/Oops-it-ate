@@ -8,6 +8,8 @@ public class IntroCutsceneController : MonoBehaviour
     [SerializeField] private Sprite[] cutsceneOneFrames;
     [SerializeField] private Sprite[] cutsceneTwoFrames;
     [SerializeField] private Sprite[] cutsceneThreeFrames;
+    [SerializeField] private Sprite[] cutsceneFourFrames;
+    [SerializeField] private Sprite[] cutsceneFiveFrames;
     [SerializeField] private float framesPerSecond = 8f;
     [SerializeField, Min(0f)] private float fadeDuration = 0.5f;
     [SerializeField] private string gameplaySceneName = "1";
@@ -22,7 +24,9 @@ public class IntroCutsceneController : MonoBehaviour
     {
         FirstLoop,
         SecondOnce,
-        ThirdLoop
+        ThirdLoop,
+        FourthOnce,
+        FifthLoop
     }
 
     private void Awake()
@@ -47,6 +51,12 @@ public class IntroCutsceneController : MonoBehaviour
         }
 
         if (phase == CutscenePhase.ThirdLoop && WasAdvancePressed())
+        {
+            StartPhase(CutscenePhase.FourthOnce);
+            return;
+        }
+
+        if (phase == CutscenePhase.FifthLoop && WasAdvancePressed())
         {
             SceneManager.LoadScene(gameplaySceneName);
             return;
@@ -73,6 +83,12 @@ public class IntroCutsceneController : MonoBehaviour
             if (phase == CutscenePhase.SecondOnce)
             {
                 StartPhase(CutscenePhase.ThirdLoop);
+                return;
+            }
+
+            if (phase == CutscenePhase.FourthOnce)
+            {
+                StartPhase(CutscenePhase.FifthLoop);
                 return;
             }
 
@@ -144,6 +160,10 @@ public class IntroCutsceneController : MonoBehaviour
                 return cutsceneTwoFrames;
             case CutscenePhase.ThirdLoop:
                 return cutsceneThreeFrames;
+            case CutscenePhase.FourthOnce:
+                return cutsceneFourFrames;
+            case CutscenePhase.FifthLoop:
+                return cutsceneFiveFrames;
             default:
                 return cutsceneOneFrames;
         }

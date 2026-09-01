@@ -27,20 +27,10 @@ namespace OopsItAte.Interaction
             transform.localScale = Vector3.one * world.Settings.cellSize;
 
             var renderer = GetComponent<MeshRenderer>();
-            if (renderer == null)
+            if (renderer != null)
             {
-                renderer = gameObject.AddComponent<MeshRenderer>();
+                renderer.enabled = false;
             }
-
-            renderer.material = new Material(FindUnlitShader());
-            renderer.material.color = color;
-
-            if (GetComponent<MeshFilter>() == null)
-            {
-                gameObject.AddComponent<MeshFilter>().mesh = CreateQuadMesh();
-            }
-
-            renderer.enabled = false;
             growableBody = GetComponent<PetBody>();
             if (growableBody == null)
             {
@@ -57,37 +47,11 @@ namespace OopsItAte.Interaction
             transform.position = world.Settings.GridToWorld(position) + Vector3.back * 0.25f;
         }
 
-        private static Mesh CreateQuadMesh()
-        {
-            var mesh = new Mesh();
-            mesh.vertices = new[]
-            {
-                new Vector3(-0.5f, -0.5f, 0f),
-                new Vector3(0.5f, -0.5f, 0f),
-                new Vector3(-0.5f, 0.5f, 0f),
-                new Vector3(0.5f, 0.5f, 0f)
-            };
-            mesh.triangles = new[] { 0, 2, 1, 2, 3, 1 };
-            mesh.RecalculateNormals();
-            return mesh;
-        }
-
-        private static Shader FindUnlitShader()
-        {
-            return Shader.Find("Universal Render Pipeline/Unlit")
-                ?? Shader.Find("Unlit/Color")
-                ?? Shader.Find("Sprites/Default");
-        }
-
-        private void OnDrawGizmos()
-        {
-            Gizmos.color = color;
-            Gizmos.DrawCube(transform.position, Vector3.one);
-        }
-
 #if UNITY_EDITOR
         private void OnValidate()
         {
+            MeshRenderer placeholder = GetComponent<MeshRenderer>();
+            if (placeholder != null) placeholder.enabled = false;
             if (ovenBackground == null)
             {
                 ovenBackground = LoadFirstSprite(

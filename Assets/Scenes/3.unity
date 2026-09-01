@@ -129,6 +129,7 @@ GameObject:
   m_Component:
   - component: {fileID: 674419}
   - component: {fileID: 674418}
+  - component: {fileID: 930310000001}
   m_Layer: 0
   m_Name: PetVisual
   m_TagString: Untagged
@@ -245,10 +246,10 @@ MonoBehaviour:
   canBePushedByBodyGrowth: 1
   normalVisual: {fileID: 674417}
   bigDogSide: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
-  bigDogOpen3ConnectedNorth: {fileID: 0}
-  bigDogOpen3ConnectedEast: {fileID: 0}
-  bigDogOpen3ConnectedSouth: {fileID: 0}
-  bigDogOpen3ConnectedWest: {fileID: 0}
+  bigDogOpen3ConnectedNorth: {fileID: 4965653968227792412, guid: 4e4d8c05ec65eaf44a01d20efe5db40b, type: 3}
+  bigDogOpen3ConnectedEast: {fileID: 1751097608498928227, guid: d9eca39cf2dc08f44ad6c9e8c84a03c3, type: 3}
+  bigDogOpen3ConnectedSouth: {fileID: 5768884981487863313, guid: e9b1dbd687ef1a243a0ad309972edc2f, type: 3}
+  bigDogOpen3ConnectedWest: {fileID: 9008817623733193801, guid: 810d46062e2438645933b0ab17561b9d, type: 3}
   bigDogNE: {fileID: 1669955001949877241, guid: b904f7e013f9b7c4b8601ff260e537e5, type: 3}
   bigDogES: {fileID: -5209184284951002492, guid: d4308b07e5eba4647832d860f6fda58e, type: 3}
   bigDogWN: {fileID: 4650782177985915308, guid: 3f66abfd812c1964d8f93a238aaebe42, type: 3}
@@ -257,9 +258,18 @@ MonoBehaviour:
   bigDogNEW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogNSW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogESW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
+  ovenBackground: {fileID: 0}
+  ovenAbove: {fileID: 0}
+  ovenFront: {fileID: 0}
+  bigDogFaceAnimation: {fileID: 7400000, guid: c8b2eddce22b9eb4487e7b4e16bfc7f3, type: 2}
   bigDogFace: {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
   bigDogFace1x2Vertical: {fileID: 0}
   bigDogFace2x1Horizontal: {fileID: 0}
+  bigDogFaceFallbackDuration: 1.1
+  resizeShakeDuration: 0.18
+  resizeShakeStrength: 0.06
+  resizeShakeFrequency: 36
+  bigDogFaceFrameData: {fileID: 11400000, guid: a74fd3cb5a7e0a841bdac3332b2a17cb, type: 2}
 --- !u!4 &32240737
 Transform:
   m_ObjectHideFlags: 0
@@ -299,6 +309,7 @@ GameObject:
   m_Component:
   - component: {fileID: 357862060}
   - component: {fileID: 357862061}
+  - component: {fileID: 930310000002}
   m_Layer: 0
   m_Name: PetVisual
   m_TagString: Untagged
@@ -589,6 +600,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Interaction.KitchenStation
   color: {r: 1, g: 0.65, b: 0.1, a: 1}
   growableBody: {fileID: 0}
+  ovenBackground: {fileID: 2240339920060759967, guid: 05f92868674d2a94fb9d1202b837a915, type: 3}
+  ovenAbove: {fileID: -2251223810377589854, guid: 7894b12be3dafee48b6aaa89c06bde1f, type: 3}
+  ovenFront: {fileID: 4851746002876068271, guid: 6ab2a8b1952927741b63ede200bd21bd, type: 3}
 --- !u!23 &1489377000
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -707,6 +721,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.DoorExit
   targetSceneName: 2
+  openingDirection: 0
+  upSprite: {fileID: -2955084659378984245, guid: 54637ed15fb51b443a88bae4896d09fe, type: 3}
+  downSprite: {fileID: -4672882131292808356, guid: 4e841154f852fb441a7234361d35282d, type: 3}
+  leftSprite: {fileID: -7732078956242957111, guid: 1343ddf78deea664faa4f0d0dea1b8c7, type: 3}
+  rightSprite: {fileID: -7072695414245721861, guid: 5a63e9c9b7ba4f14e86567c5be935731, type: 3}
   color: {r: 0.9, g: 0.15, b: 0.15, a: 1}
 --- !u!23 &1563230774
 MeshRenderer:
@@ -1042,10 +1061,10 @@ MonoBehaviour:
   canBePushedByBodyGrowth: 1
   normalVisual: {fileID: 357862059}
   bigDogSide: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
-  bigDogOpen3ConnectedNorth: {fileID: 0}
-  bigDogOpen3ConnectedEast: {fileID: 0}
-  bigDogOpen3ConnectedSouth: {fileID: 0}
-  bigDogOpen3ConnectedWest: {fileID: 0}
+  bigDogOpen3ConnectedNorth: {fileID: 4965653968227792412, guid: 4e4d8c05ec65eaf44a01d20efe5db40b, type: 3}
+  bigDogOpen3ConnectedEast: {fileID: 1751097608498928227, guid: d9eca39cf2dc08f44ad6c9e8c84a03c3, type: 3}
+  bigDogOpen3ConnectedSouth: {fileID: 5768884981487863313, guid: e9b1dbd687ef1a243a0ad309972edc2f, type: 3}
+  bigDogOpen3ConnectedWest: {fileID: 9008817623733193801, guid: 810d46062e2438645933b0ab17561b9d, type: 3}
   bigDogNE: {fileID: 1669955001949877241, guid: b904f7e013f9b7c4b8601ff260e537e5, type: 3}
   bigDogES: {fileID: -5209184284951002492, guid: d4308b07e5eba4647832d860f6fda58e, type: 3}
   bigDogWN: {fileID: 4650782177985915308, guid: 3f66abfd812c1964d8f93a238aaebe42, type: 3}
@@ -1054,9 +1073,18 @@ MonoBehaviour:
   bigDogNEW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogNSW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
   bigDogESW: {fileID: -5761442640452813992, guid: d2e837764c80f6c4e84d60359e935744, type: 3}
+  ovenBackground: {fileID: 0}
+  ovenAbove: {fileID: 0}
+  ovenFront: {fileID: 0}
+  bigDogFaceAnimation: {fileID: 7400000, guid: c8b2eddce22b9eb4487e7b4e16bfc7f3, type: 2}
   bigDogFace: {fileID: -1281099185113080405, guid: 21448a0af7d58744197236a08b0cf19b, type: 3}
   bigDogFace1x2Vertical: {fileID: 0}
   bigDogFace2x1Horizontal: {fileID: 0}
+  bigDogFaceFallbackDuration: 1.1
+  resizeShakeDuration: 0.18
+  resizeShakeStrength: 0.06
+  resizeShakeFrequency: 36
+  bigDogFaceFrameData: {fileID: 11400000, guid: a74fd3cb5a7e0a841bdac3332b2a17cb, type: 2}
 --- !u!1 &2017498703
 GameObject:
   m_ObjectHideFlags: 0
@@ -1089,6 +1117,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.DoorExit
   targetSceneName: 4
+  openingDirection: 0
+  upSprite: {fileID: -2955084659378984245, guid: 54637ed15fb51b443a88bae4896d09fe, type: 3}
+  downSprite: {fileID: -4672882131292808356, guid: 4e841154f852fb441a7234361d35282d, type: 3}
+  leftSprite: {fileID: -7732078956242957111, guid: 1343ddf78deea664faa4f0d0dea1b8c7, type: 3}
+  rightSprite: {fileID: -7072695414245721861, guid: 5a63e9c9b7ba4f14e86567c5be935731, type: 3}
   color: {r: 0.9, g: 0.15, b: 0.15, a: 1}
 --- !u!23 &2017498705
 MeshRenderer:
@@ -1178,7 +1211,13 @@ MonoBehaviour:
   spriteRenderer: {fileID: 930300000006}
   frontSprite: {fileID: 2161191996943007962, guid: fc2613c7ce11a5e49b99f2f5c6b2c8cc, type: 3}
   backSprite: {fileID: -4080705244023012874, guid: 25ba0456f1726944eba2d286ba6cc53d, type: 3}
+  leftSprite: {fileID: 0}
+  rightSprite: {fileID: 0}
   sideSprite: {fileID: 7212186499767423757, guid: 4c81dc17a8773134487710aa9c175592, type: 3}
+  hasFoodFrontSprite: {fileID: 7376447835122124826, guid: 4f5425c82abd45a4db2fa8134851d6a1, type: 3}
+  hasFoodBackSprite: {fileID: 5119260923307909896, guid: 1605ad375b7e1e747b45baba11c3ace4, type: 3}
+  hasFoodLeftSprite: {fileID: -5896980076966270222, guid: b444c8bfbbedb624fb27e0a18970eb5d, type: 3}
+  hasFoodRightSprite: {fileID: 5990196542590762893, guid: 41190b3f3a17002458e0696c60a47747, type: 3}
   sortingOrderBase: 1000
   sortingOrderOffset: 1
   stepDuration: 0.14
@@ -1321,6 +1360,50 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.LevelMapObject
   markerCode: 83
+--- !u!95 &930310000001
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 674417}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1bf36fc50faf28a4599c9e7f25c7d537, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage:
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
+--- !u!95 &930310000002
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 357862059}
+  m_Enabled: 1
+  m_Avatar: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 1bf36fc50faf28a4599c9e7f25c7d537, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage:
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

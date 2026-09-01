@@ -15,6 +15,7 @@ namespace OopsItAte.Editor
     public sealed class LevelSceneSettingsEditor : UnityEditor.Editor
     {
         private const string PlayerPrefabPath = "Assets/Prefabs/Player.prefab";
+        private const string TileThemePath = "Assets/Assets/Grid Tile Theme.asset";
         private static readonly char[] Palette = { '.', '#', ' ', '_', 'S', 'K', 'P', 'B', '1', '2', '3', '4' };
 
         private char selectedTile = '.';
@@ -25,6 +26,7 @@ namespace OopsItAte.Editor
         private void OnEnable()
         {
             var settings = (LevelSceneSettings)target;
+            EnsureTileTheme(settings);
             requestedWidth = Mathf.Max(1, settings.grid.width);
             requestedHeight = Mathf.Max(1, settings.grid.height);
         }
@@ -170,17 +172,37 @@ namespace OopsItAte.Editor
                     ? null
                     : AssetDatabase.LoadAssetAtPath<SceneAsset>(link.targetScenePath);
 
+                EditorGUILayout.LabelField($"Door {marker}", EditorStyles.boldLabel);
+                EditorGUI.indentLevel++;
                 EditorGUI.BeginChangeCheck();
                 SceneAsset selected = (SceneAsset)EditorGUILayout.ObjectField(
-                    $"Door {marker}", current, typeof(SceneAsset), false);
+                    "Target Scene", current, typeof(SceneAsset), false);
+                DoorDirection direction = (DoorDirection)EditorGUILayout.EnumPopup(
+                    "Open Direction", link.direction);
+                string doorId = EditorGUILayout.TextField(
+                    "Door ID",
+                    string.IsNullOrWhiteSpace(link.doorId)
+                        ? $"{settings.RoomId}_Door_{marker}"
+                        : link.doorId);
+                string targetDoorId = EditorGUILayout.TextField(
+                    "Target Door ID", link.targetDoorId ?? string.Empty);
+                bool startsLocked = EditorGUILayout.Toggle("Starts Locked", link.startsLocked);
+                bool requiresFood = startsLocked
+                    && EditorGUILayout.Toggle("Food Unlocks", link.requiresFood);
                 if (EditorGUI.EndChangeCheck())
                 {
-                    Undo.RecordObject(settings, "Set Door Target");
+                    Undo.RecordObject(settings, "Configure Door");
                     link.targetScenePath = selected == null
                         ? string.Empty
                         : AssetDatabase.GetAssetPath(selected);
+                    link.direction = direction;
+                    link.doorId = doorId.Trim();
+                    link.targetDoorId = targetDoorId.Trim();
+                    link.startsLocked = startsLocked;
+                    link.requiresFood = requiresFood;
                     EditorUtility.SetDirty(settings);
                 }
+                EditorGUI.indentLevel--;
             }
         }
 
@@ -271,11 +293,30 @@ namespace OopsItAte.Editor
         private static void ApplyMap(LevelSceneSettings settings, string[] rows, string undoName)
         {
             Undo.RecordObject(settings, undoName);
+            EnsureTileTheme(settings);
             settings.tileMap = string.Join("\n", rows);
             settings.TryReadTileMap(out _, out _, out _);
             EditorUtility.SetDirty(settings);
             EditorSceneManager.MarkSceneDirty(settings.gameObject.scene);
             SceneView.RepaintAll();
+        }
+
+        private static void EnsureTileTheme(LevelSceneSettings settings)
+        {
+            if (settings == null || settings.tileTheme != null)
+            {
+                return;
+            }
+
+            GridTileTheme theme = AssetDatabase.LoadAssetAtPath<GridTileTheme>(TileThemePath);
+            if (theme == null)
+            {
+                return;
+            }
+
+            settings.tileTheme = theme;
+            EditorUtility.SetDirty(settings);
+            EditorSceneManager.MarkSceneDirty(settings.gameObject.scene);
         }
 
         private static string[] GetFixedRows(LevelSceneSettings settings, out int width, out int height)
@@ -299,9 +340,19 @@ namespace OopsItAte.Editor
             bool changed = false;
             foreach (char marker in markers)
             {
-                if (links.Any(link => link.Marker == marker)) continue;
-                links.Add(new LevelSceneSettings.DoorLink { marker = marker - '0' });
-                changed = true;
+                LevelSceneSettings.DoorLink existing = links.FirstOrDefault(link => link.Marker == marker);
+                if (existing == null)
+                {
+                    existing = new LevelSceneSettings.DoorLink { marker = marker - '0' };
+                    links.Add(existing);
+                    changed = true;
+                }
+
+                if (string.IsNullOrWhiteSpace(existing.doorId))
+                {
+                    existing.doorId = $"{settings.RoomId}_Door_{marker}";
+                    changed = true;
+                }
             }
 
             if (!changed) return;
@@ -361,8 +412,11 @@ namespace OopsItAte.Editor
             LevelVisualAutoSetup.ApplyFromSceneOne(settings);
 
             EditorSceneManager.MarkSceneDirty(settings.gameObject.scene);
+            EditorSceneManager.SaveScene(settings.gameObject.scene);
             Selection.activeGameObject = settings.gameObject;
-            Debug.Log($"Synced scene objects from map '{settings.gameObject.scene.name}'.", settings);
+            Debug.Log(
+                $"Synced and saved scene objects from map '{settings.gameObject.scene.name}'.",
+                settings);
         }
 
         private static void SyncSingle<T>(
@@ -469,12 +523,26 @@ namespace OopsItAte.Editor
                 Undo.RecordObject(door.gameObject, "Configure Door");
                 door.gameObject.name = $"Door {marker}";
                 MoveToGrid(settings, door.transform, positions[0]);
-                if (settings.TryGetDoorTarget(marker, out string targetScene))
+                Undo.RecordObject(door, "Configure Door");
+                LevelSceneSettings.DoorLink link = settings.doorLinks
+                    .First(item => item.Marker == marker);
+                DoorDirection direction = link.direction;
+                if (direction == DoorDirection.Auto)
                 {
-                    Undo.RecordObject(door, "Set Door Target");
-                    door.SetTargetScene(targetScene);
-                    EditorUtility.SetDirty(door);
+                    direction = InferDoorDirection(settings.GetRows(), positions[0]);
                 }
+                door.SetOpeningDirection(direction);
+                string localDoorId = string.IsNullOrWhiteSpace(link.doorId)
+                    ? $"{settings.RoomId}_Door_{marker}"
+                    : link.doorId.Trim();
+                door.ConfigureAdventure(
+                    settings.RoomId,
+                    localDoorId,
+                    link.targetDoorId,
+                    link.startsLocked,
+                    link.requiresFood);
+                door.SetTargetScene(link.TargetSceneName);
+                EditorUtility.SetDirty(door);
             }
 
             foreach (DoorExit door in existing)
@@ -518,26 +586,52 @@ namespace OopsItAte.Editor
             return result;
         }
 
-        private static GameObject CreateKitchen() => CreateQuad<KitchenStation>("Kitchen", new Color(1f, 0.65f, 0.1f));
+        private static GameObject CreateKitchen() => CreateLevelObject<KitchenStation>("Kitchen");
         private static GameObject CreatePet()
         {
             var result = new GameObject("Pet");
             result.AddComponent<PetBody>();
             return result;
         }
-        private static GameObject CreateBox() => CreateQuad<PushableBox>("PushableBox", new Color(0.62f, 0.36f, 0.16f));
-        private static GameObject CreateDoor() => CreateQuad<DoorExit>("Door", new Color(0.9f, 0.15f, 0.15f));
+        private static GameObject CreateBox() => CreateLevelObject<PushableBox>("PushableBox");
+        private static GameObject CreateDoor() => CreateLevelObject<DoorExit>("Door");
 
-        private static GameObject CreateQuad<T>(string objectName, Color color) where T : Component
+        private static DoorDirection InferDoorDirection(IReadOnlyList<string> rows, GridPosition door)
         {
-            GameObject result = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            int height = rows.Count;
+            var candidates = new[]
+            {
+                new { Direction = DoorDirection.Up, Inside = new GridPosition(door.X, door.Y - 1) },
+                new { Direction = DoorDirection.Down, Inside = new GridPosition(door.X, door.Y + 1) },
+                new { Direction = DoorDirection.Left, Inside = new GridPosition(door.X + 1, door.Y) },
+                new { Direction = DoorDirection.Right, Inside = new GridPosition(door.X - 1, door.Y) }
+            };
+
+            foreach (var candidate in candidates)
+            {
+                int row = height - 1 - candidate.Inside.Y;
+                if (row < 0 || row >= height || candidate.Inside.X < 0
+                    || candidate.Inside.X >= rows[row].Length)
+                {
+                    continue;
+                }
+
+                char tile = rows[row][candidate.Inside.X];
+                if (tile == '.' || tile == '#' || tile == 'S' || tile == 'K'
+                    || tile == 'P' || tile == 'B')
+                {
+                    return candidate.Direction;
+                }
+            }
+
+            return DoorDirection.Auto;
+        }
+
+        private static GameObject CreateLevelObject<T>(string objectName) where T : Component
+        {
+            var result = new GameObject(objectName);
             result.name = objectName;
-            Collider collider = result.GetComponent<Collider>();
-            if (collider != null) UnityEngine.Object.DestroyImmediate(collider);
             result.AddComponent<T>();
-            MeshRenderer renderer = result.GetComponent<MeshRenderer>();
-            Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
-            renderer.sharedMaterial = new Material(shader) { color = color };
             return result;
         }
 
@@ -566,6 +660,7 @@ namespace OopsItAte.Editor
             ValidateAtLeastOne(rows, 'P', "Pet", issues);
 
             SortedSet<char> doors = FindDoorMarkers(rows);
+            var usedDoorIds = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
             foreach (char marker in doors)
             {
                 int count = rows.Sum(row => row.Count(tile => tile == marker));
@@ -576,6 +671,21 @@ namespace OopsItAte.Editor
                 if (!settings.TryGetDoorTarget(marker, out _))
                 {
                     issues.Add($"Door {marker} chưa chọn target scene.");
+                }
+                if (settings.TryGetDoorLink(marker, out LevelSceneSettings.DoorLink link))
+                {
+                    if (string.IsNullOrWhiteSpace(link.doorId))
+                    {
+                        issues.Add($"Door {marker} chưa có Door ID; Sync sẽ tự tạo ID.");
+                    }
+                    else if (!usedDoorIds.Add(link.doorId.Trim()))
+                    {
+                        issues.Add($"Door ID '{link.doorId}' đang bị trùng trong room.");
+                    }
+                    if (string.IsNullOrWhiteSpace(link.targetDoorId))
+                    {
+                        issues.Add($"Door {marker} chưa có Target Door ID; sẽ dùng cửa quay về kiểu cũ.");
+                    }
                 }
             }
 

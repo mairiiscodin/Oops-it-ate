@@ -19,6 +19,7 @@ namespace OopsItAte.Levels
         [SerializeField] private PushableBox[] boxes;
         [SerializeField] private KeyboardGridInput input;
         [SerializeField] private LevelExitController exitController;
+        [SerializeField] private RoomCompletionAnimation completionAnimation;
 
         private void Awake()
         {
@@ -70,6 +71,7 @@ namespace OopsItAte.Levels
             {
                 inventory = player.gameObject.AddComponent<PlayerInventory>();
             }
+            inventory.SetHasFood(GameSession.HasFood);
 
             interactor = player.GetComponent<PlayerInteractor>();
             if (interactor == null)
@@ -79,6 +81,8 @@ namespace OopsItAte.Levels
 
             interactor.Initialize(player, inventory, kitchen, pets, boxes);
             input = CreateInput(player, interactor, exitController);
+            completionAnimation = gameObject.AddComponent<RoomCompletionAnimation>();
+            completionAnimation.Initialize(pets);
             SetupCamera();
         }
 
@@ -140,6 +144,13 @@ namespace OopsItAte.Levels
             for (int i = 0; i < pets.Length; i++)
             {
                 GridPosition position = settings.grid.WorldToGrid(pets[i].transform.position);
+                if (GameSession.TryGetObjectPosition(
+                    settings.RoomId,
+                    $"Pet:{pets[i].name}",
+                    out GridPosition savedPosition))
+                {
+                    position = savedPosition;
+                }
                 pets[i].Initialize(gridWorld, position);
             }
         }
@@ -149,6 +160,13 @@ namespace OopsItAte.Levels
             for (int i = 0; i < boxes.Length; i++)
             {
                 GridPosition position = settings.grid.WorldToGrid(boxes[i].transform.position);
+                if (GameSession.TryGetObjectPosition(
+                    settings.RoomId,
+                    $"Box:{boxes[i].name}",
+                    out GridPosition savedPosition))
+                {
+                    position = savedPosition;
+                }
                 boxes[i].Initialize(gridWorld, position);
             }
         }
@@ -156,7 +174,7 @@ namespace OopsItAte.Levels
         private LevelExitController CreateExitController()
         {
             var controller = gameObject.AddComponent<LevelExitController>();
-            controller.Initialize(FindObjectsByType<DoorExit>(), gridWorld);
+            controller.Initialize(FindObjectsByType<DoorExit>(), gridWorld, settings.RoomId);
             return controller;
         }
 
@@ -180,75 +198,9 @@ namespace OopsItAte.Levels
             }
 
             camera.orthographic = true;
-            camera.orthographicSize = Mathf.Max(settings.grid.width, settings.grid.height) * 0.65f;
             camera.transform.position = new Vector3(0f, 0f, -10f);
+            gridWorld.FitCameraToLoadedBounds();
         }
 
-        private static Shader FindUnlitShader()
-        {
-            return Shader.Find("Universal Render Pipeline/Unlit")
-                ?? Shader.Find("Unlit/Color")
-                ?? Shader.Find("Sprites/Default");
-        }
-
-        private void OnDrawGizmos()
-        {
-            LevelSceneSettings sceneSettings = GetComponent<LevelSceneSettings>();
-            if (sceneSettings == null || sceneSettings.grid == null)
-            {
-                return;
-            }
-
-            DrawGridPreview(sceneSettings);
-        }
-
-        private static void DrawGridPreview(LevelSceneSettings sceneSettings)
-        {
-            GridSettings grid = sceneSettings.grid;
-            Vector3 cellSize = Vector3.one * grid.cellSize;
-            bool hasTileMap = sceneSettings.TryReadTileMap(
-                out HashSet<GridPosition> mapCells,
-                out HashSet<GridPosition> wallCells,
-                out HashSet<GridPosition> borderCells);
-
-            for (int y = 0; y < grid.height; y++)
-            {
-                for (int x = 0; x < grid.width; x++)
-                {
-                    var position = new GridPosition(x, y);
-                    if (hasTileMap
-                        && !mapCells.Contains(position)
-                        && !borderCells.Contains(position))
-                    {
-                        continue;
-                    }
-
-                    Vector3 center = grid.GridToWorld(position) + Vector3.forward * 0.05f;
-                    bool checker = (x + y) % 2 == 0;
-                    Gizmos.color = hasTileMap && borderCells.Contains(position)
-                        ? new Color(0.75f, 0.25f, 0.25f, 0.7f)
-                        : hasTileMap && wallCells.Contains(position)
-                        ? new Color(0.45f, 0.45f, 0.45f, 0.55f)
-                        : checker
-                            ? new Color(0.18f, 0.22f, 0.25f, 0.24f)
-                            : new Color(0.23f, 0.27f, 0.3f, 0.24f);
-                    Gizmos.DrawCube(center, cellSize);
-
-                    Gizmos.color = new Color(0.9f, 0.95f, 1f, 0.28f);
-                    Gizmos.DrawWireCube(center, cellSize);
-                }
-            }
-
-            if (!hasTileMap)
-            {
-                Vector3 min = grid.GridToWorld(new GridPosition(0, 0));
-                Vector3 max = grid.GridToWorld(new GridPosition(grid.width - 1, grid.height - 1));
-                Vector3 boundsCenter = (min + max) * 0.5f + Vector3.forward * 0.05f;
-                Vector3 boundsSize = new Vector3(grid.width * grid.cellSize, grid.height * grid.cellSize, grid.cellSize * 0.1f);
-
-                Gizmos.color = new Color(1f, 1f, 1f, 0.85f);
-                Gizmos.DrawWireCube(boundsCenter, boundsSize);
-            }
-        }
     }
 }

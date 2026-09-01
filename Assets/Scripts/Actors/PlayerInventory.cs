@@ -10,6 +10,17 @@ namespace OopsItAte.Actors
         public bool HasFood => hasFood;
         public event Action<bool> HasFoodChanged;
 
+        public void SetHasFood(bool value)
+        {
+            if (hasFood == value)
+            {
+                return;
+            }
+
+            hasFood = value;
+            HasFoodChanged?.Invoke(hasFood);
+        }
+
         public bool TryTakeFood()
         {
             if (hasFood)
@@ -17,8 +28,7 @@ namespace OopsItAte.Actors
                 return false;
             }
 
-            hasFood = true;
-            HasFoodChanged?.Invoke(hasFood);
+            SetHasFood(true);
             Debug.Log("Player picked up food.");
             return true;
         }
@@ -30,8 +40,7 @@ namespace OopsItAte.Actors
                 return false;
             }
 
-            hasFood = false;
-            HasFoodChanged?.Invoke(hasFood);
+            SetHasFood(false);
             Debug.Log("Player used food.");
             return true;
         }

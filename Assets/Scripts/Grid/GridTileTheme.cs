@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace OopsItAte.Grid
 {
@@ -9,70 +10,43 @@ namespace OopsItAte.Grid
     {
         [Header("Base Tiles")]
         public Sprite floor;
-        public Sprite wall;
 
-        [Header("Border Tile")]
-        public Sprite borderIsolated;
+        [Header("Walls")]
+        [Tooltip("Used when the cell directly south is not another authored wall.")]
+        public Sprite wallSouthOpen;
 
-        [Header("Border: connected in one direction")]
-        public Sprite borderNorth;
-        public Sprite borderEast;
-        public Sprite borderSouth;
-        public Sprite borderWest;
+        [FormerlySerializedAs("wall")]
+        [Tooltip("Used when the cell directly south is another authored wall.")]
+        public Sprite wallSouthClosed;
 
-        [Header("Border: corners")]
-        public Sprite borderNorthEast;
-        public Sprite borderEastSouth;
-        public Sprite borderSouthWest;
-        public Sprite borderWestNorth;
+        [Header("Directional Doors")]
+        public Sprite doorUp;
+        public Sprite doorDown;
+        public Sprite doorLeft;
+        public Sprite doorRight;
 
-        [Header("Border: opposite sides")]
-        public Sprite borderNorthSouth;
-        public Sprite borderEastWest;
+        [Header("Borders")]
+        [Tooltip("Used when the cell directly south is not another border.")]
+        public Sprite borderSouthOpen;
 
-        [Header("Border: connected in three directions")]
-        public Sprite borderNorthEastSouth;
-        public Sprite borderEastSouthWest;
-        public Sprite borderNorthSouthWest;
-        public Sprite borderNorthEastWest;
+        [FormerlySerializedAs("borderIsolated")]
+        [Tooltip("Used when the cell directly south is another border.")]
+        public Sprite borderSouthClosed;
 
-        [Header("Border: connected in four directions")]
-        public Sprite borderAllSides;
-
-        public Sprite GetBorderSprite(int connectedNeighborMask)
+        public Sprite GetWallSprite(bool isSouthOpen)
         {
-            switch (connectedNeighborMask)
-            {
-                case 0: return borderIsolated;
-                case 1: return borderNorth;
-                case 2: return borderEast;
-                case 4: return borderSouth;
-                case 8: return borderWest;
-                case 3: return borderNorthEast;
-                case 6: return borderEastSouth;
-                case 12: return borderSouthWest;
-                case 9: return borderWestNorth;
-                case 5: return borderNorthSouth;
-                case 10: return borderEastWest;
-                case 7: return borderNorthEastSouth;
-                case 14: return borderEastSouthWest;
-                case 13: return borderNorthSouthWest;
-                case 11: return borderNorthEastWest;
-                case 15: return borderAllSides;
-                default: return null;
-            }
+            Sprite preferred = isSouthOpen ? wallSouthOpen : wallSouthClosed;
+            return preferred != null
+                ? preferred
+                : (isSouthOpen ? wallSouthClosed : wallSouthOpen);
         }
 
-        public Sprite GetSingleSideSprite(int sideMask)
+        public Sprite GetBorderSprite(bool isSouthOpen)
         {
-            switch (sideMask)
-            {
-                case 1: return borderNorth;
-                case 2: return borderEast;
-                case 4: return borderSouth;
-                case 8: return borderWest;
-                default: return null;
-            }
+            Sprite preferred = isSouthOpen ? borderSouthOpen : borderSouthClosed;
+            return preferred != null
+                ? preferred
+                : (isSouthOpen ? borderSouthClosed : borderSouthOpen);
         }
     }
 }

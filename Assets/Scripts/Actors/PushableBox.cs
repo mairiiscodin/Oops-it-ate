@@ -3,18 +3,6 @@ using UnityEngine;
 
 namespace OopsItAte.Actors
 {
-    public readonly struct PushableBoxMove
-    {
-        public PushableBoxMove(PushableBox box, GridPosition direction)
-        {
-            Box = box;
-            Direction = direction;
-        }
-
-        public PushableBox Box { get; }
-        public GridPosition Direction { get; }
-    }
-
     public sealed class PushableBox : MonoBehaviour
     {
         [SerializeField] private Color color = new Color(0.62f, 0.36f, 0.16f);
@@ -22,13 +10,13 @@ namespace OopsItAte.Actors
         [SerializeField] private PetBody growableBody;
 
         private GridWorld world;
-        private Material visualMaterial;
         private bool isBlocking;
 
         public GridPosition Position => position;
         public bool IsInitialized => world != null;
         public bool IsPushable => world != null && growableBody == null;
         public PetBody GrowableBody => growableBody;
+        internal GridWorld World => world;
 
         public void Initialize(GridWorld gridWorld, GridPosition startPosition)
         {
@@ -42,7 +30,7 @@ namespace OopsItAte.Actors
 
         public bool CanMoveTo(GridPosition targetPosition)
         {
-            return world != null && world.CanEnter(targetPosition);
+            return world != null && world.CanTraverse(position, targetPosition);
         }
 
         public bool TryMove(GridPosition direction)
@@ -58,6 +46,14 @@ namespace OopsItAte.Actors
             SnapToGrid();
             AddBlocker();
             return true;
+        }
+
+        internal void SetPositionUnchecked(GridPosition targetPosition)
+        {
+            RemoveBlocker();
+            position = targetPosition;
+            SnapToGrid();
+            AddBlocker();
         }
 
         public PetBody ConvertToGrowable()
@@ -91,30 +87,17 @@ namespace OopsItAte.Actors
 
         private void EnsureVisual()
         {
-            var meshFilter = GetComponent<MeshFilter>();
-            if (meshFilter == null)
-            {
-                meshFilter = gameObject.AddComponent<MeshFilter>();
-            }
-
-            if (meshFilter.sharedMesh == null)
-            {
-                meshFilter.sharedMesh = CreateQuadMesh();
-            }
-
             var meshRenderer = GetComponent<MeshRenderer>();
-            if (meshRenderer == null)
+            if (meshRenderer != null)
             {
-                meshRenderer = gameObject.AddComponent<MeshRenderer>();
+                meshRenderer.enabled = false;
             }
 
-            if (visualMaterial == null)
+            SpriteRenderer authoredVisual = GetComponentInChildren<SpriteRenderer>(true);
+            if (authoredVisual != null)
             {
-                visualMaterial = new Material(FindUnlitShader());
-                visualMaterial.color = color;
+                authoredVisual.enabled = true;
             }
-
-            meshRenderer.sharedMaterial = visualMaterial;
         }
 
         private void SnapToGrid()
@@ -145,37 +128,16 @@ namespace OopsItAte.Actors
             isBlocking = false;
         }
 
-        private static Mesh CreateQuadMesh()
-        {
-            var mesh = new Mesh();
-            mesh.vertices = new[]
-            {
-                new Vector3(-0.5f, -0.5f, 0f),
-                new Vector3(0.5f, -0.5f, 0f),
-                new Vector3(-0.5f, 0.5f, 0f),
-                new Vector3(0.5f, 0.5f, 0f)
-            };
-            mesh.triangles = new[] { 0, 2, 1, 2, 3, 1 };
-            mesh.RecalculateNormals();
-            return mesh;
-        }
-
-        private static Shader FindUnlitShader()
-        {
-            return Shader.Find("Universal Render Pipeline/Unlit")
-                ?? Shader.Find("Unlit/Color")
-                ?? Shader.Find("Sprites/Default");
-        }
-
         private void OnDestroy()
         {
             RemoveBlocker();
         }
 
-        private void OnDrawGizmos()
+        private void OnValidate()
         {
-            Gizmos.color = color;
-            Gizmos.DrawCube(transform.position, Vector3.one);
+            MeshRenderer placeholder = GetComponent<MeshRenderer>();
+            if (placeholder != null) placeholder.enabled = false;
         }
+
     }
 }

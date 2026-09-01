@@ -24,24 +24,25 @@ namespace OopsItAte.Editor
             }
 
             Sprite floor = FindSprite("Assets/Assets/FloorTile.aseprite", "FloorTile");
-            Sprite north = FindSprite("Assets/Assets/BorderN.aseprite", "BorderN");
-            Sprite otherSides = FindSprite(
-                "Assets/Assets/BorderEorSorW.aseprite",
-                "BorderEorSorW");
+            Sprite doorUp = FindSprite("Assets/Assets/DoorUp.aseprite", "DoorUp");
+            Sprite doorDown = FindSprite("Assets/Assets/DoorDown.aseprite", "DoorDown");
+            Sprite doorLeft = FindSprite("Assets/Assets/DoorLeft.aseprite", "DoorLeft");
+            Sprite doorRight = FindSprite("Assets/Assets/DoorRight.aseprite", "DoorRight");
 
-            if (floor == null || north == null || otherSides == null)
+            if (floor == null || doorUp == null || doorDown == null
+                || doorLeft == null || doorRight == null)
             {
                 Debug.LogWarning(
-                    "Grid tile theme setup is waiting for FloorTile, BorderN and BorderEorSorW to finish importing.");
+                    "Grid tile theme setup is waiting for floor and door assets to finish importing.");
                 return;
             }
 
             bool changed = false;
             changed |= AssignIfMissing(ref theme.floor, floor);
-            changed |= AssignIfMissing(ref theme.borderNorth, north);
-            changed |= AssignIfMissing(ref theme.borderEast, otherSides);
-            changed |= AssignIfMissing(ref theme.borderSouth, otherSides);
-            changed |= AssignIfMissing(ref theme.borderWest, otherSides);
+            changed |= AssignIfMissing(ref theme.doorUp, doorUp);
+            changed |= AssignIfMissing(ref theme.doorDown, doorDown);
+            changed |= AssignIfMissing(ref theme.doorLeft, doorLeft);
+            changed |= AssignIfMissing(ref theme.doorRight, doorRight);
 
             if (!changed)
             {
@@ -50,7 +51,7 @@ namespace OopsItAte.Editor
 
             EditorUtility.SetDirty(theme);
             AssetDatabase.SaveAssets();
-            Debug.Log("Grid tile theme automatically linked the current Aseprite floor and border assets.");
+            Debug.Log("Grid tile theme automatically linked the current Aseprite floor and door assets.");
         }
 
         private static bool AssignIfMissing(ref Sprite target, Sprite value)

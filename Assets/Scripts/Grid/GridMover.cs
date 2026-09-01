@@ -60,7 +60,7 @@ namespace OopsItAte.Grid
 
         public bool CanMoveTo(GridPosition position)
         {
-            return world.CanEnter(position);
+            return world.CanTraverse(currentPosition, position);
         }
 
         public void MoveTo(GridPosition position)

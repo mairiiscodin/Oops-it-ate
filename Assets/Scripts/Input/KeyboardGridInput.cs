@@ -83,11 +83,12 @@ namespace OopsItAte.Input
 
         private void TryMove(GridPosition direction)
         {
+            GridPosition startingPosition = mover.CurrentPosition;
             if (mover.TryMove(direction))
             {
                 if (exitController != null)
                 {
-                    exitController.CheckExit(mover.CurrentPosition);
+                    exitController.CheckExit(startingPosition, direction);
                 }
 
                 return;
@@ -95,7 +96,7 @@ namespace OopsItAte.Input
 
             if (exitController != null)
             {
-                exitController.CheckExit(mover.FacingPosition);
+                exitController.CheckExit(startingPosition, direction);
             }
         }
     }

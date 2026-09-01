@@ -8,6 +8,8 @@ namespace OopsItAte.Grid
 {
     public sealed class GridWorld : MonoBehaviour
     {
+        private const float CameraPaddingInCells = 0.5f;
+
         [SerializeField] private GridSettings settings;
         [SerializeField] private GridTileTheme tileTheme;
         [SerializeField] private Color floorColor = new Color(0.16f, 0.16f, 0.16f);
@@ -18,6 +20,8 @@ namespace OopsItAte.Grid
         private GridPosition playerPosition;
         private readonly List<VoidPushLayer> voidPushLayers = new List<VoidPushLayer>();
         private Coroutine voidBurpCoroutine;
+        private Camera fittedCamera;
+        private float fittedCameraAspect = -1f;
 
         private sealed class VoidPushLayer
         {
@@ -43,6 +47,7 @@ namespace OopsItAte.Grid
         }
 
         public GridSettings Settings => settings;
+        public GridTileTheme TileTheme => tileTheme;
 
         public void Initialize(
             GridSettings gridSettings,
@@ -71,6 +76,22 @@ namespace OopsItAte.Grid
                 cellMap.IsAuthoredWall,
                 cellMap.IsLoaded,
                 cellMap.IsBorder);
+            FitCameraToLoadedBounds();
+        }
+
+        private void LateUpdate()
+        {
+            Camera camera = Camera.main;
+            if (camera == null)
+            {
+                return;
+            }
+
+            if (camera != fittedCamera
+                || !Mathf.Approximately(camera.aspect, fittedCameraAspect))
+            {
+                FitCameraToLoadedBounds();
+            }
         }
 
         public bool CanEnter(GridPosition position)
@@ -80,9 +101,36 @@ namespace OopsItAte.Grid
                 && !HasBoxAt(position);
         }
 
+        public bool CanTraverse(GridPosition source, GridPosition destination)
+        {
+            int deltaX = destination.X - source.X;
+            int deltaY = destination.Y - source.Y;
+            if ((deltaX == 0 && deltaY == 0)
+                || Mathf.Abs(deltaX) > 1
+                || Mathf.Abs(deltaY) > 1
+                || !CanEnter(destination))
+            {
+                return false;
+            }
+
+            if (deltaX == 0 || deltaY == 0)
+            {
+                return true;
+            }
+
+            GridPosition horizontalSide = source + new GridPosition(deltaX, 0);
+            GridPosition verticalSide = source + new GridPosition(0, deltaY);
+            return CanEnter(horizontalSide) && CanEnter(verticalSide);
+        }
+
         public bool IsBlocked(GridPosition position)
         {
             return cellMap.IsBlocked(position);
+        }
+
+        public bool IsTerrainBlocked(GridPosition position)
+        {
+            return cellMap.IsTerrainBlocked(position);
         }
 
         private bool HasBodyAt(GridPosition position)
@@ -196,7 +244,7 @@ namespace OopsItAte.Grid
                 addedCornerCells,
                 emptiedCells,
                 movedDoors));
-            RefreshCamera();
+            FitCameraToLoadedBounds();
             RestartVoidBurpTimer();
             Debug.Log($"The grid pushed a line of {borderLine.Count} border wall cell(s) outward.");
             return true;
@@ -618,7 +666,7 @@ namespace OopsItAte.Grid
                 RefreshCell(position);
             }
 
-            RefreshCamera();
+            FitCameraToLoadedBounds();
         }
 
         private static bool HasUnmovedDoorAt(
@@ -657,7 +705,7 @@ namespace OopsItAte.Grid
             return Mathf.Abs(direction.X) + Mathf.Abs(direction.Y) == 1;
         }
 
-        private void RefreshCamera()
+        public void FitCameraToLoadedBounds()
         {
             Camera camera = Camera.main;
             if (camera == null)
@@ -670,9 +718,21 @@ namespace OopsItAte.Grid
             Vector3 max = settings.GridToWorld(new GridPosition(maxX, maxY));
             Vector3 center = (min + max) * 0.5f;
             camera.transform.position = new Vector3(center.x, center.y, camera.transform.position.z);
+
+            float cellSize = settings.cellSize;
+            float contentWidth = (maxX - minX + 1) * cellSize;
+            float contentHeight = (maxY - minY + 1) * cellSize;
+            float padding = CameraPaddingInCells * cellSize;
+            float paddedWidth = contentWidth + padding * 2f;
+            float paddedHeight = contentHeight + padding * 2f;
+            float safeAspect = Mathf.Max(camera.aspect, 0.01f);
+
+            camera.orthographic = true;
             camera.orthographicSize = Mathf.Max(
-                maxX - minX + 1,
-                maxY - minY + 1) * 0.65f;
+                paddedHeight * 0.5f,
+                paddedWidth / (safeAspect * 2f));
+            fittedCamera = camera;
+            fittedCameraAspect = camera.aspect;
         }
     }
 }

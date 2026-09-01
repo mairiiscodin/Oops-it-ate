@@ -22,13 +22,11 @@ namespace OopsItAte.Grid
         private Func<GridPosition, bool> isWall;
         private Func<GridPosition, bool> isLoaded;
         private Func<GridPosition, bool> isBorder;
-        private Sprite fallbackSprite;
 
         private sealed class CellVisual
         {
             public GameObject Root;
             public SpriteRenderer Base;
-            public SpriteRenderer[] Borders;
         }
 
         public GridCellView(
@@ -94,16 +92,10 @@ namespace OopsItAte.Grid
             root.transform.position = settings.GridToWorld(position);
 
             SpriteRenderer baseRenderer = CreateRenderer("Base", root.transform, -100);
-            var borderRenderers = new SpriteRenderer[4];
-            for (int i = 0; i < borderRenderers.Length; i++)
-            {
-                borderRenderers[i] = CreateRenderer($"Border {i + 1}", root.transform, -90 + i);
-            }
             visuals.Add(position, new CellVisual
             {
                 Root = root,
-                Base = baseRenderer,
-                Borders = borderRenderers
+                Base = baseRenderer
             });
         }
 
@@ -120,74 +112,28 @@ namespace OopsItAte.Grid
             EnsureCell(position);
             CellVisual visual = visuals[position];
             visual.Base.enabled = false;
-            DisableBorderRenderers(visual);
 
             if (border)
             {
-                bool hasBorderSprite = theme != null
-                    && ApplyBorderSprites(visual, GetBorderNeighborMask(position));
-                if (!hasBorderSprite)
-                {
-                    visual.Base.enabled = true;
-                    ApplySprite(visual.Base, theme?.wall, wallColor);
-                }
-
+                visual.Base.enabled = true;
+                ApplySprite(
+                    visual.Base,
+                    theme?.GetBorderSprite(IsBorderSouthOpen(position)),
+                    wallColor);
                 visual.Root.name = $"Border {position}";
                 return;
             }
 
             bool wall = isWall != null && isWall(position);
-            Sprite baseSprite = wall ? theme?.wall : theme?.floor;
+            Sprite baseSprite = wall
+                ? theme?.GetWallSprite(IsSouthOpen(position))
+                : theme?.floor;
             visual.Base.enabled = true;
             ApplySprite(
                 visual.Base,
                 baseSprite,
                 wall ? wallColor : floorColor);
             visual.Root.name = $"{(wall ? "Wall" : "Floor")} {position}";
-        }
-
-        private bool ApplyBorderSprites(CellVisual visual, int borderNeighborMask)
-        {
-            Sprite combinedSprite = theme.GetBorderSprite(borderNeighborMask);
-            if (combinedSprite != null)
-            {
-                visual.Borders[0].enabled = true;
-                ApplySprite(visual.Borders[0], combinedSprite, Color.white);
-                return true;
-            }
-
-            int rendererIndex = 0;
-            int[] sideMasks = { 1, 2, 4, 8 };
-            for (int i = 0; i < sideMasks.Length; i++)
-            {
-                int sideMask = sideMasks[i];
-                if ((borderNeighborMask & sideMask) == 0)
-                {
-                    continue;
-                }
-
-                Sprite sideSprite = theme.GetSingleSideSprite(sideMask);
-                if (sideSprite == null)
-                {
-                    continue;
-                }
-
-                SpriteRenderer renderer = visual.Borders[rendererIndex++];
-                renderer.enabled = true;
-                ApplySprite(renderer, sideSprite, Color.white);
-            }
-
-            return rendererIndex > 0;
-        }
-
-        private int GetBorderNeighborMask(GridPosition position)
-        {
-            int mask = 0;
-            if (IsBorder(position + North)) mask |= 1;
-            if (IsBorder(position + East)) mask |= 2;
-            if (IsBorder(position + South)) mask |= 4;
-            if (IsBorder(position + West)) mask |= 8;
-            return mask;
         }
 
         private bool IsLoaded(GridPosition position)
@@ -200,20 +146,22 @@ namespace OopsItAte.Grid
             return isBorder != null && isBorder(position);
         }
 
+        private bool IsSouthOpen(GridPosition position)
+        {
+            return isWall == null || !isWall(position + South);
+        }
+
+        private bool IsBorderSouthOpen(GridPosition position)
+        {
+            return !IsBorder(position + South);
+        }
+
         private void RefreshNeighbors(GridPosition position)
         {
             SyncCell(position + North);
             SyncCell(position + East);
             SyncCell(position + South);
             SyncCell(position + West);
-        }
-
-        private static void DisableBorderRenderers(CellVisual visual)
-        {
-            for (int i = 0; i < visual.Borders.Length; i++)
-            {
-                visual.Borders[i].enabled = false;
-            }
         }
 
         private void DestroyVisual(GridPosition position)
@@ -238,9 +186,15 @@ namespace OopsItAte.Grid
 
         private void ApplySprite(SpriteRenderer renderer, Sprite sprite, Color fallbackColor)
         {
-            bool usesFallback = sprite == null;
-            renderer.sprite = usesFallback ? GetFallbackSprite() : sprite;
-            renderer.color = usesFallback ? fallbackColor : Color.white;
+            if (sprite == null)
+            {
+                renderer.sprite = null;
+                renderer.enabled = false;
+                return;
+            }
+
+            renderer.sprite = sprite;
+            renderer.color = Color.white;
 
             Vector2 spriteSize = renderer.sprite.bounds.size;
             float scaleX = settings.cellSize / Mathf.Max(spriteSize.x, 0.0001f);
@@ -251,22 +205,6 @@ namespace OopsItAte.Grid
                 -boundsCenter.x * scaleX,
                 -boundsCenter.y * scaleY,
                 renderer.transform.localPosition.z);
-        }
-
-        private Sprite GetFallbackSprite()
-        {
-            if (fallbackSprite == null)
-            {
-                Texture2D texture = Texture2D.whiteTexture;
-                fallbackSprite = Sprite.Create(
-                    texture,
-                    new Rect(0f, 0f, texture.width, texture.height),
-                    new Vector2(0.5f, 0.5f),
-                    texture.width);
-                fallbackSprite.name = "Grid Fallback Sprite";
-            }
-
-            return fallbackSprite;
         }
 
         private void Clear()

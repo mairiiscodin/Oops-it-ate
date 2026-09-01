@@ -18,6 +18,8 @@ public static class StartMenuSceneBuilder
     private const string CutsceneOnePath = "Assets/Assets/Cutscene1-1.aseprite";
     private const string CutsceneTwoPath = "Assets/Assets/Cutscene1-2.aseprite";
     private const string CutsceneThreePath = "Assets/Assets/Cutscene2-1.aseprite";
+    private const string CutsceneFourPath = "Assets/Assets/Cutscene3-1.aseprite";
+    private const string CutsceneFivePath = "Assets/Assets/Cutscene3-2.aseprite";
 
     [InitializeOnLoadMethod]
     private static void QueueAutoBuild()
@@ -67,7 +69,10 @@ public static class StartMenuSceneBuilder
         Sprite[] cutsceneOneFrames = LoadSpritesInFrameOrder(CutsceneOnePath);
         Sprite[] cutsceneTwoFrames = LoadSpritesInFrameOrder(CutsceneTwoPath);
         Sprite[] cutsceneThreeFrames = LoadSpritesInFrameOrder(CutsceneThreePath);
-        if (cutsceneOneFrames.Length == 0 || cutsceneTwoFrames.Length == 0 || cutsceneThreeFrames.Length == 0)
+        Sprite[] cutsceneFourFrames = LoadSpritesInFrameOrder(CutsceneFourPath);
+        Sprite[] cutsceneFiveFrames = LoadSpritesInFrameOrder(CutsceneFivePath);
+        if (cutsceneOneFrames.Length == 0 || cutsceneTwoFrames.Length == 0 || cutsceneThreeFrames.Length == 0 ||
+            cutsceneFourFrames.Length == 0 || cutsceneFiveFrames.Length == 0)
         {
             Debug.LogWarning("Could not refresh cutscene frames because at least one Aseprite asset has no imported sprites.");
             return;
@@ -93,13 +98,17 @@ public static class StartMenuSceneBuilder
                 serializedController.FindProperty("cutsceneTwoFrames"), cutsceneTwoFrames);
             changed |= SetSpriteArrayIfDifferent(
                 serializedController.FindProperty("cutsceneThreeFrames"), cutsceneThreeFrames);
+            changed |= SetSpriteArrayIfDifferent(
+                serializedController.FindProperty("cutsceneFourFrames"), cutsceneFourFrames);
+            changed |= SetSpriteArrayIfDifferent(
+                serializedController.FindProperty("cutsceneFiveFrames"), cutsceneFiveFrames);
 
             if (changed)
             {
                 serializedController.ApplyModifiedPropertiesWithoutUndo();
                 EditorSceneManager.MarkSceneDirty(scene);
                 EditorSceneManager.SaveScene(scene);
-                Debug.Log($"Refreshed IntroCutscene frames: {cutsceneOneFrames.Length}, {cutsceneTwoFrames.Length}, {cutsceneThreeFrames.Length}.");
+                Debug.Log($"Refreshed IntroCutscene frames: {cutsceneOneFrames.Length}, {cutsceneTwoFrames.Length}, {cutsceneThreeFrames.Length}, {cutsceneFourFrames.Length}, {cutsceneFiveFrames.Length}.");
             }
         }
 
@@ -171,6 +180,8 @@ public static class StartMenuSceneBuilder
         Sprite[] cutsceneOneFrames = LoadSpritesInFrameOrder(CutsceneOnePath);
         Sprite[] cutsceneTwoFrames = LoadSpritesInFrameOrder(CutsceneTwoPath);
         Sprite[] cutsceneThreeFrames = LoadSpritesInFrameOrder(CutsceneThreePath);
+        Sprite[] cutsceneFourFrames = LoadSpritesInFrameOrder(CutsceneFourPath);
+        Sprite[] cutsceneFiveFrames = LoadSpritesInFrameOrder(CutsceneFivePath);
 
         Image cutsceneImage = CreateImage(canvas.transform, "Cutscene Image", cutsceneOneFrames.FirstOrDefault());
         cutsceneImage.preserveAspect = true;
@@ -184,6 +195,8 @@ public static class StartMenuSceneBuilder
         SetSpriteArray(serializedController.FindProperty("cutsceneOneFrames"), cutsceneOneFrames);
         SetSpriteArray(serializedController.FindProperty("cutsceneTwoFrames"), cutsceneTwoFrames);
         SetSpriteArray(serializedController.FindProperty("cutsceneThreeFrames"), cutsceneThreeFrames);
+        SetSpriteArray(serializedController.FindProperty("cutsceneFourFrames"), cutsceneFourFrames);
+        SetSpriteArray(serializedController.FindProperty("cutsceneFiveFrames"), cutsceneFiveFrames);
         serializedController.FindProperty("gameplaySceneName").stringValue = "1";
         serializedController.ApplyModifiedPropertiesWithoutUndo();
 
