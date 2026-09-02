@@ -35,6 +35,12 @@ namespace OopsItAte.Levels
         [SerializeField] private Sprite rightSprite;
         [SerializeField] private Color color = new Color(0.9f, 0.15f, 0.15f);
 
+        [Header("Feed Shake")]
+        [SerializeField, Min(0f)] private float feedShakeDuration = 0.18f;
+        [SerializeField, Min(0f)] private float feedShakeStrength = 0.06f;
+        [SerializeField, Min(1f)] private float feedShakeFrequency = 36f;
+        [SerializeField, Min(0.1f)] private float burpDuration = 1.1f;
+
         public string TargetSceneName => targetSceneName;
         public string RoomId => roomId;
         public string DoorId => doorId;
@@ -102,7 +108,10 @@ namespace OopsItAte.Levels
         private readonly HashSet<GridPosition> cells = new HashSet<GridPosition>();
         private readonly Dictionary<GridPosition, GameObject> visuals = new Dictionary<GridPosition, GameObject>();
         private readonly List<List<GridPosition>> growthLayers = new List<List<GridPosition>>();
+        private readonly List<Transform> shakeTargets = new List<Transform>();
+        private readonly List<Vector3> shakeBasePositions = new List<Vector3>();
         private Coroutine burpCoroutine;
+        private Coroutine shakeCoroutine;
 
         public void Initialize(GridWorld gridWorld)
         {
@@ -184,6 +193,7 @@ namespace OopsItAte.Levels
 
             growthLayers.Add(addedCells);
             Redraw();
+            PlayFeedShake();
             RestartBurpTimer();
             return true;
         }
@@ -338,13 +348,99 @@ namespace OopsItAte.Levels
         {
             while (growthLayers.Count > 0)
             {
-                yield return new WaitForSeconds(3f);
+                yield return new WaitForSeconds(Mathf.Max(0.1f, burpDuration));
                 List<GridPosition> layer = growthLayers[growthLayers.Count - 1];
                 for (int i = 0; i < layer.Count; i++) cells.Remove(layer[i]);
                 growthLayers.RemoveAt(growthLayers.Count - 1);
                 Redraw();
+                PlayFeedShake();
             }
             burpCoroutine = null;
+        }
+
+        private void PlayFeedShake()
+        {
+            if (feedShakeDuration <= 0f || feedShakeStrength <= 0f)
+            {
+                return;
+            }
+
+            StopFeedShake();
+            foreach (GameObject visual in visuals.Values)
+            {
+                if (visual == null)
+                {
+                    continue;
+                }
+
+                shakeTargets.Add(visual.transform);
+                shakeBasePositions.Add(visual.transform.localPosition);
+            }
+
+            if (shakeTargets.Count > 0)
+            {
+                shakeCoroutine = StartCoroutine(ShakeFeedVisuals());
+            }
+        }
+
+        private IEnumerator ShakeFeedVisuals()
+        {
+            float elapsed = 0f;
+            float strength = feedShakeStrength * (grid != null ? grid.cellSize : 1f);
+            while (elapsed < feedShakeDuration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = Mathf.Clamp01(elapsed / feedShakeDuration);
+                float fade = 1f - progress;
+                float phase = elapsed * feedShakeFrequency * Mathf.PI * 2f;
+                Vector3 offset = new Vector3(
+                    Mathf.Sin(phase),
+                    Mathf.Sin(phase * 1.37f + 0.8f) * 0.55f,
+                    0f) * (strength * fade);
+
+                for (int i = 0; i < shakeTargets.Count; i++)
+                {
+                    if (shakeTargets[i] != null)
+                    {
+                        shakeTargets[i].localPosition = shakeBasePositions[i] + offset;
+                    }
+                }
+
+                yield return null;
+            }
+
+            RestoreFeedShakeTargets();
+            shakeCoroutine = null;
+        }
+
+        private void StopFeedShake()
+        {
+            if (shakeCoroutine != null)
+            {
+                StopCoroutine(shakeCoroutine);
+                shakeCoroutine = null;
+            }
+
+            RestoreFeedShakeTargets();
+        }
+
+        private void RestoreFeedShakeTargets()
+        {
+            for (int i = 0; i < shakeTargets.Count; i++)
+            {
+                if (shakeTargets[i] != null)
+                {
+                    shakeTargets[i].localPosition = shakeBasePositions[i];
+                }
+            }
+
+            shakeTargets.Clear();
+            shakeBasePositions.Clear();
+        }
+
+        private void OnDisable()
+        {
+            StopFeedShake();
         }
 
         private static string NormalizeId(string value)

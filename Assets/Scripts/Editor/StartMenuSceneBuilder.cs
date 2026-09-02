@@ -69,7 +69,7 @@ public static class StartMenuSceneBuilder
         Sprite[] cutsceneOneFrames = LoadSpritesInFrameOrder(CutsceneOnePath);
         Sprite[] cutsceneTwoFrames = LoadSpritesInFrameOrder(CutsceneTwoPath);
         Sprite[] cutsceneThreeFrames = LoadSpritesInFrameOrder(CutsceneThreePath);
-        Sprite[] cutsceneFourFrames = LoadSpritesInFrameOrder(CutsceneFourPath);
+        Sprite[] cutsceneFourFrames = LoadSpritesInFrameOrder(CutsceneFourPath).Take(9).ToArray();
         Sprite[] cutsceneFiveFrames = LoadSpritesInFrameOrder(CutsceneFivePath);
         if (cutsceneOneFrames.Length == 0 || cutsceneTwoFrames.Length == 0 || cutsceneThreeFrames.Length == 0 ||
             cutsceneFourFrames.Length == 0 || cutsceneFiveFrames.Length == 0)
@@ -180,7 +180,7 @@ public static class StartMenuSceneBuilder
         Sprite[] cutsceneOneFrames = LoadSpritesInFrameOrder(CutsceneOnePath);
         Sprite[] cutsceneTwoFrames = LoadSpritesInFrameOrder(CutsceneTwoPath);
         Sprite[] cutsceneThreeFrames = LoadSpritesInFrameOrder(CutsceneThreePath);
-        Sprite[] cutsceneFourFrames = LoadSpritesInFrameOrder(CutsceneFourPath);
+        Sprite[] cutsceneFourFrames = LoadSpritesInFrameOrder(CutsceneFourPath).Take(9).ToArray();
         Sprite[] cutsceneFiveFrames = LoadSpritesInFrameOrder(CutsceneFivePath);
 
         Image cutsceneImage = CreateImage(canvas.transform, "Cutscene Image", cutsceneOneFrames.FirstOrDefault());

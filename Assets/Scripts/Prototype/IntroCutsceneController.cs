@@ -96,7 +96,7 @@ public class IntroCutsceneController : MonoBehaviour
 
             if (phase == CutscenePhase.FourthOnce)
             {
-                BeginPhaseTransition(CutscenePhase.FifthLoop);
+                StartPhase(CutscenePhase.FifthLoop, false);
                 return;
             }
 
@@ -159,13 +159,22 @@ public class IntroCutsceneController : MonoBehaviour
         cutsceneImage.color = color;
     }
 
-    private void StartPhase(CutscenePhase nextPhase)
+    private void StartPhase(CutscenePhase nextPhase, bool fadeIn = true)
     {
         phase = nextPhase;
         frameIndex = 0;
         timer = 0f;
         ShowCurrentFrame();
-        BeginFadeIn();
+
+        if (fadeIn)
+        {
+            BeginFadeIn();
+        }
+        else
+        {
+            isFading = false;
+            SetCutsceneAlpha(1f);
+        }
     }
 
     private Sprite[] GetCurrentFrames()
