@@ -793,8 +793,19 @@ namespace OopsItAte.Editor
             }
 
             SyncSingle<GridMover>(settings, markers, 'S', "Player", CreatePlayer);
-            SyncSingle<KitchenStation>(settings, markers, 'K', "Kitchen", CreateKitchen);
-            SyncMany<PetBody>(settings, markers.TryGetValue('P', out var pets) ? pets : null, 'P', "Pet", CreatePet);
+            SyncMany<KitchenStation>(
+                settings,
+                markers.TryGetValue('K', out var kitchens) ? kitchens : null,
+                'K',
+                "Kitchen",
+                CreateKitchen);
+            SyncMany<PetBody>(
+                settings,
+                markers.TryGetValue('P', out var pets) ? pets : null,
+                'P',
+                "Pet",
+                CreatePet,
+                pet => pet.GetComponent<KitchenStation>() == null);
             SyncMany<PushableBox>(settings, markers.TryGetValue('B', out var boxes) ? boxes : null, 'B', "PushableBox", CreateBox);
             SyncDoors(settings, markers);
             LevelVisualAutoSetup.ApplyFromSceneOne(settings);
@@ -848,11 +859,13 @@ namespace OopsItAte.Editor
             IReadOnlyList<GridPosition> positions,
             char marker,
             string objectName,
-            Func<GameObject> factory) where T : Component
+            Func<GameObject> factory,
+            Func<T, bool> include = null) where T : Component
         {
             positions = positions ?? Array.Empty<GridPosition>();
             T[] objects = UnityEngine.Object.FindObjectsByType<T>()
                 .Where(item => item.gameObject.scene == settings.gameObject.scene)
+                .Where(item => include == null || include(item))
                 .OrderBy(item => item.GetComponent<LevelMapObject>() == null ? 1 : 0)
                 .ToArray();
             int i;
@@ -1044,7 +1057,7 @@ namespace OopsItAte.Editor
             string[] rows = settings.GetRows();
             var issues = new List<string>();
             ValidateUnique(rows, 'S', "Player", issues);
-            ValidateUnique(rows, 'K', "Kitchen", issues);
+            ValidateAtLeastOne(rows, 'K', "Kitchen", issues);
             ValidateAtLeastOne(rows, 'P', "Pet", issues);
 
             SortedSet<char> doors = FindDoorMarkers(rows);

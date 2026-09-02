@@ -14,7 +14,7 @@ Current slice: scene-based level setup with grid movement, kitchen, carried food
 
 1. Open `Tools > Oops It Ate > Open Level Painter`.
 2. Select a brush and click or drag over cells in the `Quick Level Painter` inspector.
-3. Use `S` for Player, `K` for Kitchen, one or more `P` markers for Pets, `B` for a pushable box, and `1` through `9` for doors.
+3. Use `S` for Player, one or more `K` markers for Kitchens, one or more `P` markers for Pets, `B` for a pushable box, and `1` through `9` for doors.
 4. For each numbered door, choose its target Scene, one-way `Open Direction`, stable `Door ID`, and the `Target Door ID` used as the arrival point in the next room. `Auto` follows the loaded floor beside the boundary door.
 5. Click `Sync Objects From Map` to move existing scene objects and create any missing objects.
 6. Click `Add Door Scenes To Build` once to add the current scene and all door targets to the Build Profile scene list.

@@ -3,6 +3,7 @@ using OopsItAte.Grid;
 using OopsItAte.Input;
 using OopsItAte.Interaction;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace OopsItAte.Levels
@@ -14,7 +15,7 @@ namespace OopsItAte.Levels
         [SerializeField] private GridMover player;
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private PlayerInteractor interactor;
-        [SerializeField] private KitchenStation kitchen;
+        [SerializeField] private KitchenStation[] kitchens;
         [SerializeField] private PetBody[] pets;
         [SerializeField] private PushableBox[] boxes;
         [SerializeField] private KeyboardGridInput input;
@@ -42,11 +43,14 @@ namespace OopsItAte.Levels
             }
 
             player = FindAnyObjectByType<GridMover>();
-            kitchen = FindAnyObjectByType<KitchenStation>();
-            pets = FindObjectsByType<PetBody>();
+            kitchens = FindObjectsByType<KitchenStation>();
+            pets = FindObjectsByType<PetBody>()
+                .Where(body => body.GetComponent<KitchenStation>() == null)
+                .ToArray();
             boxes = FindObjectsByType<PushableBox>();
 
-            if (player == null || kitchen == null || pets == null || pets.Length == 0)
+            if (player == null || kitchens == null || kitchens.Length == 0
+                || pets == null || pets.Length == 0)
             {
                 Debug.LogError("Scene needs Player, KitchenStation, and at least one PetBody object.", this);
                 enabled = false;
@@ -54,7 +58,7 @@ namespace OopsItAte.Levels
             }
 
             gridWorld = CreateGridWorld();
-            SetupKitchen();
+            SetupKitchens();
             SetupPets();
             SetupBoxes();
             exitController = CreateExitController();
@@ -66,6 +70,8 @@ namespace OopsItAte.Levels
             }
 
             player.Initialize(gridWorld, playerSpawnPosition);
+            player.GetComponent<PlayerMovementVisual>()
+                ?.SetVisualLocalPosition(Vector3.zero);
             inventory = player.GetComponent<PlayerInventory>();
             if (inventory == null)
             {
@@ -79,7 +85,7 @@ namespace OopsItAte.Levels
                 interactor = player.gameObject.AddComponent<PlayerInteractor>();
             }
 
-            interactor.Initialize(player, inventory, kitchen, pets, boxes);
+            interactor.Initialize(player, inventory, kitchens, pets, boxes);
             input = CreateInput(player, interactor, exitController);
             completionAnimation = gameObject.AddComponent<RoomCompletionAnimation>();
             completionAnimation.Initialize(pets, settings.RoomId);
@@ -132,11 +138,14 @@ namespace OopsItAte.Levels
             }
         }
 
-        private void SetupKitchen()
+        private void SetupKitchens()
         {
-            GridPosition position = settings.grid.WorldToGrid(kitchen.transform.position);
-            kitchen.Initialize(gridWorld, position);
-            kitchen.transform.position = settings.grid.GridToWorld(position) + Vector3.back * 0.25f;
+            for (int i = 0; i < kitchens.Length; i++)
+            {
+                GridPosition position = settings.grid.WorldToGrid(kitchens[i].transform.position);
+                kitchens[i].Initialize(gridWorld, position);
+                kitchens[i].transform.position = settings.grid.GridToWorld(position) + Vector3.back * 0.25f;
+            }
         }
 
         private void SetupPets()

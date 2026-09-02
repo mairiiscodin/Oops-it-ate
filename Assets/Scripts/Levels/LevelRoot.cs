@@ -99,6 +99,8 @@ namespace OopsItAte.Levels
 
             var mover = playerObject.AddComponent<GridMover>();
             mover.Initialize(world, new GridPosition(level.playerStart.x, level.playerStart.y));
+            mover.GetComponent<PlayerMovementVisual>()
+                ?.SetVisualLocalPosition(Vector3.zero);
             return mover;
         }
 

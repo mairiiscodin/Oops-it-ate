@@ -70,7 +70,7 @@ namespace OopsItAte.Input
                 : GameSession.CurrentRoomId;
             GameSession.ResetRoom(roomId);
             Time.timeScale = 1f;
-            SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+            RoomTransitionOverlay.LoadRoom(SceneManager.GetActiveScene().buildIndex);
         }
 
         private static GridPosition? ReadMovementDirection()

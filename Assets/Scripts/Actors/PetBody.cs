@@ -517,7 +517,15 @@ namespace OopsItAte.Actors
 
         private void PlayResizeShake()
         {
-            if (!string.Equals(bodyName, "Pet", StringComparison.OrdinalIgnoreCase)
+            bool isPetOrKitchen = string.Equals(
+                    bodyName,
+                    "Pet",
+                    StringComparison.OrdinalIgnoreCase)
+                || string.Equals(
+                    bodyName,
+                    "Kitchen",
+                    StringComparison.OrdinalIgnoreCase);
+            if (!isPetOrKitchen
                 || resizeShakeDuration <= 0f
                 || resizeShakeStrength <= 0f)
             {

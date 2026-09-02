@@ -9,7 +9,7 @@ namespace OopsItAte.Interaction
     {
         [SerializeField] private GridMover player;
         [SerializeField] private PlayerInventory inventory;
-        [SerializeField] private KitchenStation kitchen;
+        [SerializeField] private KitchenStation[] kitchens;
         [SerializeField] private PetBody[] pets;
         [SerializeField] private PushableBox[] boxes;
 
@@ -20,9 +20,24 @@ namespace OopsItAte.Interaction
             PetBody[] petBodies,
             PushableBox[] boxes = null)
         {
+            Initialize(
+                playerMover,
+                playerInventory,
+                kitchenStation == null ? null : new[] { kitchenStation },
+                petBodies,
+                boxes);
+        }
+
+        public void Initialize(
+            GridMover playerMover,
+            PlayerInventory playerInventory,
+            KitchenStation[] kitchenStations,
+            PetBody[] petBodies,
+            PushableBox[] boxes = null)
+        {
             player = playerMover;
             inventory = playerInventory;
-            kitchen = kitchenStation;
+            kitchens = kitchenStations ?? new KitchenStation[0];
             pets = petBodies ?? new PetBody[0];
             this.boxes = boxes ?? new PushableBox[0];
         }
@@ -31,10 +46,8 @@ namespace OopsItAte.Interaction
         {
             GridPosition targetPosition = player.FacingPosition;
 
-            if (kitchen != null
-                && kitchen.GrowableBody != null
-                && kitchen.GrowableBody.Contains(targetPosition)
-                && !inventory.HasFood)
+            KitchenStation targetKitchen = FindKitchenAt(targetPosition);
+            if (targetKitchen != null && !inventory.HasFood)
             {
                 inventory.TryTakeFood();
                 return;
@@ -60,20 +73,27 @@ namespace OopsItAte.Interaction
                 return;
             }
 
-            if (kitchen != null && targetPosition.Equals(kitchen.Position))
+        }
+
+        private KitchenStation FindKitchenAt(GridPosition targetPosition)
+        {
+            for (int i = 0; i < kitchens.Length; i++)
             {
-                if (inventory.HasFood)
+                KitchenStation kitchen = kitchens[i];
+                if (kitchen == null)
                 {
-                    TryFeed(kitchen.GrowableBody);
-                }
-                else
-                {
-                    inventory.TryTakeFood();
+                    continue;
                 }
 
-                return;
+                if ((kitchen.GrowableBody != null
+                        && kitchen.GrowableBody.Contains(targetPosition))
+                    || targetPosition.Equals(kitchen.Position))
+                {
+                    return kitchen;
+                }
             }
 
+            return null;
         }
 
         private static bool TryFeedDoorAt(GridPosition targetPosition)
@@ -100,8 +120,8 @@ namespace OopsItAte.Interaction
                 }
             }
 
-            if (kitchen != null && kitchen.GrowableBody != null
-                && kitchen.GrowableBody.Contains(targetPosition))
+            KitchenStation kitchen = FindKitchenAt(targetPosition);
+            if (kitchen != null && kitchen.GrowableBody != null)
             {
                 return kitchen.GrowableBody;
             }

@@ -49,6 +49,18 @@ namespace OopsItAte.Grid
 
         public bool IsAnimating => animationRoutine != null;
 
+        public void SetVisualLocalPosition(Vector3 localPosition)
+        {
+            EnsureReferences();
+            if (visual == null)
+            {
+                return;
+            }
+
+            baseLocalPosition = localPosition;
+            visual.localPosition = localPosition;
+        }
+
         private void Awake()
         {
             EnsureReferences();

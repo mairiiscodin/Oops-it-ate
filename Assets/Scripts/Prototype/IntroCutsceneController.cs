@@ -1,6 +1,6 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using OopsItAte.Levels;
 
 public class IntroCutsceneController : MonoBehaviour
 {
@@ -18,6 +18,7 @@ public class IntroCutsceneController : MonoBehaviour
     private float timer;
     private float fadeTimer;
     private bool isFading;
+    private bool isChangingCutscene;
     private CutscenePhase phase;
 
     private enum CutscenePhase
@@ -37,28 +38,35 @@ public class IntroCutsceneController : MonoBehaviour
 
     private void Update()
     {
+        if (isChangingCutscene)
+        {
+            return;
+        }
+
         Sprite[] currentFrames = GetCurrentFrames();
         if (currentFrames == null || currentFrames.Length == 0)
         {
-            SceneManager.LoadScene(gameplaySceneName);
+            isChangingCutscene = true;
+            RoomTransitionOverlay.LoadRoom(gameplaySceneName);
             return;
         }
 
         if (phase == CutscenePhase.FirstLoop && WasAdvancePressed())
         {
-            StartPhase(CutscenePhase.SecondOnce);
+            BeginPhaseTransition(CutscenePhase.SecondOnce);
             return;
         }
 
         if (phase == CutscenePhase.ThirdLoop && WasAdvancePressed())
         {
-            StartPhase(CutscenePhase.FourthOnce);
+            BeginPhaseTransition(CutscenePhase.FourthOnce);
             return;
         }
 
         if (phase == CutscenePhase.FifthLoop && WasAdvancePressed())
         {
-            SceneManager.LoadScene(gameplaySceneName);
+            isChangingCutscene = true;
+            RoomTransitionOverlay.LoadRoom(gameplaySceneName);
             return;
         }
 
@@ -82,13 +90,13 @@ public class IntroCutsceneController : MonoBehaviour
         {
             if (phase == CutscenePhase.SecondOnce)
             {
-                StartPhase(CutscenePhase.ThirdLoop);
+                BeginPhaseTransition(CutscenePhase.ThirdLoop);
                 return;
             }
 
             if (phase == CutscenePhase.FourthOnce)
             {
-                StartPhase(CutscenePhase.FifthLoop);
+                BeginPhaseTransition(CutscenePhase.FifthLoop);
                 return;
             }
 
@@ -96,6 +104,14 @@ public class IntroCutsceneController : MonoBehaviour
         }
  
         ShowCurrentFrame();
+    }
+
+    private void BeginPhaseTransition(CutscenePhase nextPhase)
+    {
+        isChangingCutscene = true;
+        RoomTransitionOverlay.Play(
+            () => StartPhase(nextPhase),
+            () => isChangingCutscene = false);
     }
 
     private void ShowCurrentFrame()
