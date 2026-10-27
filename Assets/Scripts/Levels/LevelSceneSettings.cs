@@ -54,6 +54,8 @@ namespace OopsItAte.Levels
         public GridTileTheme tileTheme;
         [Tooltip("Stable adventure-room ID. Defaults to the scene name when empty.")]
         public string roomId = string.Empty;
+        [Tooltip("Show the first-room tutorial hints (WASD, oven smoke, J prompts, hungry bubbles).")]
+        public bool playOnboarding;
 
         public string RoomId => string.IsNullOrWhiteSpace(roomId)
             ? gameObject.scene.name

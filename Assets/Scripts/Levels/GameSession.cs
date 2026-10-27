@@ -14,6 +14,11 @@ namespace OopsItAte.Levels
             new Dictionary<string, GridPosition>(StringComparer.OrdinalIgnoreCase);
         private static readonly HashSet<string> flags =
             new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        private static readonly HashSet<string> visitedRooms =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+        /// <summary>Raised with the room ID when a room is visited, completed or reset.</summary>
+        public static event Action<string> RoomProgressChanged;
 
         private static bool hasPendingArrival;
         private static string pendingSourceRoomId;
@@ -34,6 +39,7 @@ namespace OopsItAte.Levels
             unlockedDoors.Clear();
             objectPositions.Clear();
             flags.Clear();
+            visitedRooms.Clear();
             HasFood = false;
             CurrentRoomId = string.Empty;
             hasPendingArrival = false;
@@ -45,7 +51,14 @@ namespace OopsItAte.Levels
         public static void EnterRoom(string roomId)
         {
             CurrentRoomId = Normalize(roomId);
+            visitedRooms.Add(CurrentRoomId);
+            RoomProgressChanged?.Invoke(CurrentRoomId);
         }
+
+        public static bool HasVisitedRoom(string roomId) => visitedRooms.Contains(Normalize(roomId));
+
+        /// <summary>A room is complete once every Pet in it has been fed.</summary>
+        public static bool IsRoomCompleted(string roomId) => HasRoomCompletionPlayed(roomId);
 
         public static void ResetRoom(string roomId)
         {
@@ -72,6 +85,7 @@ namespace OopsItAte.Levels
             pendingSourceRoomId = string.Empty;
             pendingSourceSceneName = string.Empty;
             pendingTargetDoorId = string.Empty;
+            RoomProgressChanged?.Invoke(Normalize(roomId));
         }
 
         public static void BeginRoomTransition(
@@ -156,6 +170,7 @@ namespace OopsItAte.Levels
         public static void MarkRoomCompletionPlayed(string roomId)
         {
             flags.Add(GetScopedKey(roomId, "RoomCompletionPlayed"));
+            RoomProgressChanged?.Invoke(Normalize(roomId));
         }
 
         public static bool HasRoomCompletionPlayed(string roomId)

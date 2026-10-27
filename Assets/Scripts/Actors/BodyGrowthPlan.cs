@@ -19,6 +19,7 @@ namespace OopsItAte.Actors
         }
 
         public IReadOnlyList<GridPosition> GrowthCells => growthCells;
+        public int PushCount => pushMoves.Count;
 
         public bool TryCommit(PetBody growingBody)
         {

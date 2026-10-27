@@ -1,3 +1,4 @@
+using OopsItAte.Audio;
 using OopsItAte.Grid;
 using OopsItAte.Interaction;
 using OopsItAte.Levels;
@@ -69,6 +70,7 @@ namespace OopsItAte.Input
                 ? SceneManager.GetActiveScene().name
                 : GameSession.CurrentRoomId;
             GameSession.ResetRoom(roomId);
+            SoundManager.Play(Sfx.Reset);
             Time.timeScale = 1f;
             RoomTransitionOverlay.LoadRoom(SceneManager.GetActiveScene().buildIndex);
         }

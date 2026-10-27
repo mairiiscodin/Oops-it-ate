@@ -1,4 +1,5 @@
 using OopsItAte.Actors;
+using OopsItAte.Audio;
 using OopsItAte.Grid;
 using OopsItAte.Interaction;
 using UnityEngine;
@@ -20,9 +21,23 @@ namespace OopsItAte.Levels
                 : currentRoomId.Trim();
             GameSession.EnterRoom(roomId);
 
+            bool roomCompleted = GameSession.IsRoomCompleted(roomId);
             for (int i = 0; i < doors.Length; i++)
             {
                 doors[i].Initialize(gridWorld);
+                doors[i].SetHidden(doors[i].HiddenUntilRoomComplete && !roomCompleted);
+            }
+        }
+
+        /// <summary>Called once the room completion animation has finished.</summary>
+        public void RevealHiddenDoors()
+        {
+            for (int i = 0; i < doors.Length; i++)
+            {
+                if (doors[i] != null && doors[i].IsHidden)
+                {
+                    doors[i].Reveal();
+                }
             }
         }
 
@@ -120,6 +135,7 @@ namespace OopsItAte.Levels
                     SceneManager.GetActiveScene().name,
                     door.TargetDoorId,
                     inventory != null && inventory.HasFood);
+                SoundManager.Play(Sfx.DoorEnter);
                 RoomTransitionOverlay.LoadRoom(door.TargetSceneName);
                 return;
             }

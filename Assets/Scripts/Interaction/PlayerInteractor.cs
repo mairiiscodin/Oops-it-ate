@@ -1,4 +1,5 @@
 using OopsItAte.Actors;
+using OopsItAte.Audio;
 using OopsItAte.Grid;
 using OopsItAte.Levels;
 using UnityEngine;
@@ -7,6 +8,9 @@ namespace OopsItAte.Interaction
 {
     public sealed class PlayerInteractor : MonoBehaviour
     {
+        // Lets the chomp start before the growth pop so the two don't mask each other.
+        private const float GrowSoundDelay = 0.12f;
+
         [SerializeField] private GridMover player;
         [SerializeField] private PlayerInventory inventory;
         [SerializeField] private KitchenStation[] kitchens;
@@ -56,13 +60,19 @@ namespace OopsItAte.Interaction
             PetBody targetBody = inventory.HasFood ? FindBodyAt(targetPosition) : null;
             if (inventory.HasFood && targetBody != null)
             {
-                TryFeed(targetBody);
+                if (!TryFeed(targetBody))
+                {
+                    SoundManager.Play(Sfx.Nope);
+                }
+
                 return;
             }
 
             if (inventory.HasFood && TryFeedDoorAt(targetPosition))
             {
                 inventory.TryUseFood();
+                SoundManager.Play(Sfx.Eat);
+                SoundManager.Play(Sfx.Grow, 0.85f, delay: GrowSoundDelay);
                 return;
             }
 
@@ -70,7 +80,15 @@ namespace OopsItAte.Interaction
                 && player.World.TryPushBorder(targetPosition, player.FacingDirection))
             {
                 inventory.TryUseFood();
+                SoundManager.Play(Sfx.Eat);
+                SoundManager.Play(Sfx.BorderPush, delay: GrowSoundDelay);
                 return;
+            }
+
+            if (inventory.HasFood)
+            {
+                // Holding food but facing nothing that can eat it.
+                SoundManager.Play(Sfx.Nope);
             }
 
         }
@@ -148,17 +166,28 @@ namespace OopsItAte.Interaction
             return null;
         }
 
-        private void TryFeed(PetBody targetBody)
+        private bool TryFeed(PetBody targetBody)
         {
             if (!BodyGrowthPlanner.TryBuild(targetBody, player, out BodyGrowthPlan plan))
             {
-                return;
+                return false;
             }
 
-            if (plan.TryCommit(targetBody) && inventory.TryUseFood())
+            if (!plan.TryCommit(targetBody) || !inventory.TryUseFood())
             {
-                targetBody.MarkFed();
+                return false;
             }
+
+            targetBody.MarkFed();
+            SoundManager.Play(Sfx.Eat);
+            // Bigger bodies sound deeper with every extra layer.
+            SoundManager.Play(Sfx.Grow, Mathf.Max(0.6f, 1.1f - targetBody.GrowthLevel * 0.1f), delay: GrowSoundDelay);
+            if (plan.PushCount > 0)
+            {
+                SoundManager.Play(Sfx.Push, delay: GrowSoundDelay);
+            }
+
+            return true;
         }
     }
 }

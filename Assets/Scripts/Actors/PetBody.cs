@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections;
+using OopsItAte.Audio;
 using OopsItAte.Grid;
 using OopsItAte.Interaction;
 using UnityEngine;
@@ -98,6 +99,7 @@ namespace OopsItAte.Actors
         public bool CanBePushedByBodyGrowth => canBePushedByBodyGrowth;
         public bool HasBeenFed => hasBeenFed;
         public GridPosition Origin => origin;
+        public int GrowthLevel => growthLayers.Count;
         internal GridWorld World => world;
         internal IReadOnlyCollection<GridPosition> Cells => bodyCells;
 
@@ -330,6 +332,7 @@ namespace OopsItAte.Actors
             StopBurpTimer();
             Redraw();
             PlayResizeShake();
+            SoundManager.Play(Sfx.Burp);
             Debug.Log($"{bodyName} burped and shrank to 1x1.");
             return true;
         }
@@ -377,6 +380,7 @@ namespace OopsItAte.Actors
 
                 Redraw();
                 PlayResizeShake();
+                SoundManager.Play(Sfx.Burp);
                 Debug.Log($"{bodyName} burped and lost one growth layer.");
             }
 

@@ -1,4 +1,5 @@
 using System;
+using OopsItAte.Audio;
 using UnityEngine;
 
 namespace OopsItAte.Actors
@@ -29,6 +30,7 @@ namespace OopsItAte.Actors
             }
 
             SetHasFood(true);
+            SoundManager.Play(Sfx.Pickup);
             Debug.Log("Player picked up food.");
             return true;
         }

@@ -2,6 +2,7 @@ using OopsItAte.Actors;
 using OopsItAte.Grid;
 using OopsItAte.Input;
 using OopsItAte.Interaction;
+using OopsItAte.Onboarding;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -21,6 +22,7 @@ namespace OopsItAte.Levels
         [SerializeField] private KeyboardGridInput input;
         [SerializeField] private LevelExitController exitController;
         [SerializeField] private RoomCompletionAnimation completionAnimation;
+        [SerializeField] private MiniMapHud miniMap;
 
         private void Awake()
         {
@@ -89,6 +91,15 @@ namespace OopsItAte.Levels
             input = CreateInput(player, interactor, exitController);
             completionAnimation = gameObject.AddComponent<RoomCompletionAnimation>();
             completionAnimation.Initialize(pets, settings.RoomId);
+            completionAnimation.Finished += exitController.RevealHiddenDoors;
+            if (settings.playOnboarding)
+            {
+                gameObject.AddComponent<OnboardingController>()
+                    .Initialize(player, inventory, kitchens, pets);
+            }
+
+            miniMap = gameObject.AddComponent<MiniMapHud>();
+            miniMap.Initialize();
             SetupCamera();
         }
 

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using OopsItAte.Audio;
 using OopsItAte.Grid;
 using UnityEngine;
 
@@ -26,6 +27,8 @@ namespace OopsItAte.Levels
         [SerializeField] private string targetDoorId;
         [SerializeField] private bool startsLocked;
         [SerializeField] private bool requiresFood;
+        [Tooltip("Looks like a plain wall/border until every Pet in the room has been fed.")]
+        [SerializeField] private bool hiddenUntilRoomComplete;
         [SerializeField] private GridPosition position;
         [SerializeField] private DoorDirection openingDirection = DoorDirection.Auto;
         [Header("Directional Door Sprites")]
@@ -49,6 +52,62 @@ namespace OopsItAte.Levels
         public bool IsLocked => startsLocked && !GameSession.IsDoorUnlocked(roomId, doorId);
         public GridPosition Position => position;
         public DoorDirection OpeningDirection => openingDirection;
+        public bool HiddenUntilRoomComplete => hiddenUntilRoomComplete;
+        public bool IsHidden => isHidden;
+
+        private bool isHidden;
+        private Coroutine revealCoroutine;
+
+        public void SetHidden(bool hidden)
+        {
+            isHidden = hidden;
+            foreach (GameObject visual in visuals.Values)
+            {
+                if (visual != null) visual.SetActive(!hidden);
+            }
+        }
+
+        public void Reveal()
+        {
+            if (!isHidden)
+            {
+                return;
+            }
+
+            SetHidden(false);
+            if (revealCoroutine != null) StopCoroutine(revealCoroutine);
+            revealCoroutine = StartCoroutine(PlayRevealPop());
+            PlayFeedShake();
+            SoundManager.Play(Sfx.Reveal);
+        }
+
+        private IEnumerator PlayRevealPop()
+        {
+            const float duration = 0.35f;
+            float elapsed = 0f;
+            while (elapsed < duration)
+            {
+                elapsed += Time.unscaledDeltaTime;
+                float progress = Mathf.Clamp01(elapsed / duration);
+                // Overshoot slightly so the door "pops" out of the wall.
+                float scale = progress < 0.6f
+                    ? Mathf.Lerp(0.2f, 1.2f, progress / 0.6f)
+                    : Mathf.Lerp(1.2f, 1f, (progress - 0.6f) / 0.4f);
+                SetVisualScale(scale);
+                yield return null;
+            }
+
+            SetVisualScale(1f);
+            revealCoroutine = null;
+        }
+
+        private void SetVisualScale(float scale)
+        {
+            foreach (GameObject visual in visuals.Values)
+            {
+                if (visual != null) visual.transform.localScale = Vector3.one * scale;
+            }
+        }
 
         public void SetTargetScene(string sceneName)
         {
@@ -76,6 +135,11 @@ namespace OopsItAte.Levels
 
         public bool CanOpenFrom(GridPosition playerPosition, GridPosition movementDirection)
         {
+            if (isHidden)
+            {
+                return false;
+            }
+
             GridPosition openVector = GetDirectionVector(openingDirection);
             if (!movementDirection.Equals(openVector))
             {
@@ -172,6 +236,12 @@ namespace OopsItAte.Levels
 
         public bool FeedAndGrow()
         {
+            if (isHidden)
+            {
+                // A hidden door behaves like the wall it is disguised as.
+                return false;
+            }
+
             if (boundaryDirection.Equals(default))
             {
                 Debug.LogWarning($"Door {name} must be placed on the unloaded grid boundary to grow.");
@@ -251,6 +321,7 @@ namespace OopsItAte.Levels
                         CreateSpriteLayer("Door", visual.transform, sprite, 20);
                     }
                     visuals[cell] = visual;
+                    visual.SetActive(!isHidden);
                 }
                 visual.transform.position = grid.GridToWorld(cell) + Vector3.back * 0.2f;
             }
@@ -354,6 +425,7 @@ namespace OopsItAte.Levels
                 growthLayers.RemoveAt(growthLayers.Count - 1);
                 Redraw();
                 PlayFeedShake();
+                SoundManager.Play(Sfx.Burp, 1.15f);
             }
             burpCoroutine = null;
         }

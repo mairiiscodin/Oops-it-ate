@@ -1,0 +1,60 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 75a6782f63299114887f91c35fc06c06, type: 3}
+  m_Name: MiniMapLayout
+  m_EditorClassIdentifier: Assembly-CSharp::OopsItAte.Levels.MiniMapLayout
+  rooms:
+  - roomId: 1
+    cell: {x: 0, y: 0}
+  - roomId: 2
+    cell: {x: 1, y: 0}
+  - roomId: 3
+    cell: {x: 2, y: 0}
+  - roomId: 4
+    cell: {x: 3, y: 0}
+  - roomId: 5
+    cell: {x: 4, y: 0}
+  - roomId: 6
+    cell: {x: 4, y: 1}
+  - roomId: 7
+    cell: {x: 3, y: 1}
+  - roomId: 8-1
+    cell: {x: 2, y: 1}
+  links:
+  - roomA: 1
+    roomB: 2
+  - roomA: 2
+    roomB: 3
+  - roomA: 3
+    roomB: 4
+  - roomA: 4
+    roomB: 5
+  - roomA: 5
+    roomB: 6
+  - roomA: 6
+    roomB: 7
+  - roomA: 7
+    roomB: 8-1
+  revealAllRooms: 0
+  roomSize: 28
+  roomSpacing: 14
+  linkThickness: 6
+  currentFrameThickness: 3
+  panelPadding: 10
+  screenMargin: {x: 24, y: 24}
+  roomSprite: {fileID: 0}
+  panelColor: {r: 0, g: 0, b: 0, a: 0.45}
+  unknownRoomColor: {r: 0.22, g: 0.24, b: 0.3, a: 1}
+  visitedRoomColor: {r: 0.45, g: 0.48, b: 0.55, a: 1}
+  completedRoomColor: {r: 1, g: 0.85, b: 0.35, a: 1}
+  currentFrameColor: {r: 1, g: 1, b: 1, a: 1}
+  linkColor: {r: 0.35, g: 0.38, b: 0.45, a: 1}

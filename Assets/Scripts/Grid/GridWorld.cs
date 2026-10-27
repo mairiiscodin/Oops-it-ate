@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using OopsItAte.Actors;
+using OopsItAte.Audio;
 using OopsItAte.Levels;
 using UnityEngine;
 
@@ -22,6 +23,8 @@ namespace OopsItAte.Grid
         private Coroutine voidBurpCoroutine;
         private Camera fittedCamera;
         private float fittedCameraAspect = -1f;
+        private int fittedPixelWidth;
+        private int fittedPixelHeight;
 
         private sealed class VoidPushLayer
         {
@@ -88,7 +91,9 @@ namespace OopsItAte.Grid
             }
 
             if (camera != fittedCamera
-                || !Mathf.Approximately(camera.aspect, fittedCameraAspect))
+                || !Mathf.Approximately(camera.aspect, fittedCameraAspect)
+                || camera.pixelWidth != fittedPixelWidth
+                || camera.pixelHeight != fittedPixelHeight)
             {
                 FitCameraToLoadedBounds();
             }
@@ -507,6 +512,7 @@ namespace OopsItAte.Grid
 
                 RestoreVoid(layer);
                 voidPushLayers.RemoveAt(voidPushLayers.Count - 1);
+                SoundManager.Play(Sfx.Burp, 0.8f);
                 Debug.Log("The grid burped and restored the latest border wall line.");
             }
 
@@ -727,12 +733,73 @@ namespace OopsItAte.Grid
             float paddedHeight = contentHeight + padding * 2f;
             float safeAspect = Mathf.Max(camera.aspect, 0.01f);
 
-            camera.orthographic = true;
-            camera.orthographicSize = Mathf.Max(
+            float fittedSize = Mathf.Max(
                 paddedHeight * 0.5f,
                 paddedWidth / (safeAspect * 2f));
+
+            camera.orthographic = true;
+            camera.orthographicSize = fittedSize;
+            float screenPixelsPerCell = GetPixelPerfectPixelsPerCell(camera, fittedSize);
+            if (screenPixelsPerCell > 0f)
+            {
+                // A fractional zoom (e.g. after a border push) draws each 32px tile on a
+                // non-integer number of screen pixels, which shows up as seams/stripes
+                // between tiles. Zoom out to the nearest whole-pixel scale instead.
+                float pixelsPerUnit = screenPixelsPerCell / cellSize;
+                camera.orthographicSize = camera.pixelHeight / (2f * pixelsPerUnit);
+                camera.transform.position = SnapCameraToPixelGrid(
+                    camera,
+                    min - new Vector3(cellSize, cellSize, 0f) * 0.5f,
+                    1f / pixelsPerUnit);
+            }
+
             fittedCamera = camera;
             fittedCameraAspect = camera.aspect;
+            fittedPixelWidth = camera.pixelWidth;
+            fittedPixelHeight = camera.pixelHeight;
+        }
+
+        /// <summary>
+        /// Largest whole number of screen pixels per cell that still fits the content.
+        /// Prefers an integer multiple of the tile's texel size so every texel is the
+        /// same size on screen. Returns 0 when pixel snapping is not possible.
+        /// </summary>
+        private float GetPixelPerfectPixelsPerCell(Camera camera, float fittedSize)
+        {
+            if (camera.pixelHeight <= 0 || fittedSize <= 0f)
+            {
+                return 0f;
+            }
+
+            float fittedPixelsPerCell = camera.pixelHeight / (2f * fittedSize) * settings.cellSize;
+            Sprite referenceTile = tileTheme != null ? tileTheme.floor : null;
+            float texelsPerCell = referenceTile != null ? referenceTile.rect.height : 0f;
+            if (texelsPerCell >= 1f)
+            {
+                float scale = Mathf.Floor(fittedPixelsPerCell / texelsPerCell);
+                if (scale >= 1f)
+                {
+                    return scale * texelsPerCell;
+                }
+            }
+
+            // Window too small for 1:1 texels: at least keep tile edges on whole pixels.
+            float wholePixels = Mathf.Floor(fittedPixelsPerCell);
+            return wholePixels >= 1f ? wholePixels : 0f;
+        }
+
+        /// <summary>Moves the camera so tile edges land exactly on screen pixel boundaries.</summary>
+        private static Vector3 SnapCameraToPixelGrid(Camera camera, Vector3 tileEdge, float unitsPerPixel)
+        {
+            Vector3 position = camera.transform.position;
+            float halfWidth = camera.pixelWidth * 0.5f * unitsPerPixel;
+            float halfHeight = camera.pixelHeight * 0.5f * unitsPerPixel;
+
+            float left = position.x - halfWidth;
+            float bottom = position.y - halfHeight;
+            left = tileEdge.x + Mathf.Round((left - tileEdge.x) / unitsPerPixel) * unitsPerPixel;
+            bottom = tileEdge.y + Mathf.Round((bottom - tileEdge.y) / unitsPerPixel) * unitsPerPixel;
+            return new Vector3(left + halfWidth, bottom + halfHeight, position.z);
         }
     }
 }

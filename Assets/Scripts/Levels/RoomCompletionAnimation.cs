@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using OopsItAte.Actors;
+using OopsItAte.Audio;
 using OopsItAte.Grid;
 using OopsItAte.Input;
 using OopsItAte.Interaction;
@@ -30,6 +31,9 @@ namespace OopsItAte.Levels
         private float timeScaleBeforeAnimation = 1f;
         private bool pausedGameplay;
         private bool gameplayInputWasEnabled;
+
+        /// <summary>Raised after the "Oops I Ate" animation ends and gameplay resumes.</summary>
+        public event System.Action Finished;
 
         public void Initialize(PetBody[] scenePets, string currentRoomId)
         {
@@ -99,10 +103,12 @@ namespace OopsItAte.Levels
             if (frames == null || frames.Length == 0)
             {
                 Debug.LogWarning("Oops It Ate completion animation has no frames.", this);
+                Finished?.Invoke();
                 yield break;
             }
 
             PauseGameplay();
+            SoundManager.Play(Sfx.Complete);
             Camera camera = Camera.main;
             animationVisual = new GameObject("Oops It Ate Completion Animation");
             SpriteRenderer renderer = animationVisual.AddComponent<SpriteRenderer>();
@@ -147,6 +153,7 @@ namespace OopsItAte.Levels
             Destroy(animationVisual);
             animationVisual = null;
             ResumeGameplay();
+            Finished?.Invoke();
         }
 
         private void PauseGameplay()

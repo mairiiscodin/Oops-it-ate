@@ -244,6 +244,7 @@ MonoBehaviour:
   targetDoorId: 
   startsLocked: 0
   requiresFood: 0
+  hiddenUntilRoomComplete: 1
   openingDirection: 0
   upSprite: {fileID: -2955084659378984245, guid: 54637ed15fb51b443a88bae4896d09fe, type: 3}
   downSprite: {fileID: -4672882131292808356, guid: 4e841154f852fb441a7234361d35282d, type: 3}
@@ -518,6 +519,7 @@ MonoBehaviour:
     cellSize: 1
   tileTheme: {fileID: 11400000, guid: a27acbcae90c4595a21274c2c08ef024, type: 2}
   roomId: 
+  playOnboarding: 1
   tileMap: '..K..
 
     .....

@@ -1,3 +1,4 @@
+using OopsItAte.Audio;
 using UnityEngine;
 
 namespace OopsItAte.Grid
@@ -47,6 +48,7 @@ namespace OopsItAte.Grid
             if (!CanMoveTo(nextPosition))
             {
                 movementVisual?.PlayBlockedStep(direction, world.Settings.cellSize);
+                SoundManager.Play(Sfx.Bump);
                 return false;
             }
 
@@ -55,6 +57,7 @@ namespace OopsItAte.Grid
             SnapToGrid();
             Vector3 worldDelta = world.Settings.GridToWorld(currentPosition) - previousWorldPosition;
             movementVisual?.PlayStep(worldDelta, direction);
+            SoundManager.Play(Sfx.Step);
             return true;
         }
 

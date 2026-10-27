@@ -264,6 +264,11 @@ orthographicSize       = max(vertical, horizontal)
 
 Padding hiện là `0.5` cell mỗi phía.
 
+Sau đó camera được **snap pixel-perfect**: số pixel màn hình mỗi cell được làm tròn xuống thành
+bội số nguyên của kích thước texel tile (`tileTheme.floor`, hiện 32px), và vị trí camera được
+snap để mép tile nằm đúng trên pixel. Không có bước này, zoom lẻ (nhất là sau khi đẩy border)
+gây sọc ngang/dọc giữa các tile. Hệ quả: map có thể nhỏ hơn màn hình một chút so với fit thuần.
+
 Camera phải refit khi:
 
 - Level được dựng.
@@ -344,6 +349,59 @@ File liên quan:
 - `Assets/Scripts/Levels/RoomCompletionAnimation.cs`
 - `Assets/Resources/OopsItAteCompletionFrames.asset`
 - `Assets/Scripts/Levels/GameSession.cs`
+
+## 15b. Mini map tiến trình
+
+Mỗi gameplay level tạo `MiniMapHud` (Canvas overlay góc trên phải, sorting order 100,
+nằm dưới iris transition). Sơ đồ phòng đọc từ `Assets/Resources/MiniMapLayout.asset`.
+
+- Tạo/cập nhật layout: `Tools/Oops It Ate/Generate Mini Map Layout`. Tool mở từng scene
+  gameplay trong Build Settings, đọc các `DoorExit` và đặt phòng đích theo phía cửa nằm
+  trên map (BFS từ scene `1`). Có thể sửa `cell` bằng tay sau khi generate; chạy lại tool
+  sẽ ghi đè rooms/links nhưng giữ phần style.
+- Trạng thái ô phòng: chưa vào nhưng kề phòng đã vào → tối; đã vào → xám; mọi Pet đã ăn
+  (`GameSession.IsRoomCompleted`) → sáng, nhấp nháy một lần lúc vừa hoàn thành. Phòng
+  hiện tại có khung trắng. `revealAllRooms` hiện toàn bộ map ngay từ đầu.
+- `GameSession.RoomProgressChanged` báo khi vào phòng, hoàn thành hoặc reset phòng. Reset
+  bằng `R` xóa trạng thái hoàn thành của room đó nên ô phòng tắt lại.
+
+File liên quan:
+
+- `Assets/Scripts/Levels/MiniMapHud.cs`
+- `Assets/Scripts/Levels/MiniMapLayout.cs`
+- `Assets/Scripts/Editor/MiniMapLayoutGenerator.cs`
+
+## 15c. FTUE onboarding phòng 1
+
+Bật bằng `LevelSceneSettings.playOnboarding` (hiện chỉ bật ở scene `1`).
+`SceneLevelBuilder` thêm `OnboardingController`:
+
+1. Icon WASD trên đầu player cho tới khi đi được 2 ô.
+2. Oven bốc khói cho tới lần đầu lấy food; icon J hiện khi đứng sát, quay mặt vào oven và chưa cầm food.
+3. Pet chưa ăn có bong bóng suy nghĩ món ăn (sau bước 1); icon J hiện khi cầm food và quay mặt vào Pet.
+4. Cửa có `DoorExit.hiddenUntilRoomComplete` trông như border/tường, không đi qua và không cho ăn được.
+   Cửa chỉ hiện (pop + rung) khi `RoomCompletionAnimation.Finished` báo animation "Oops I Ate" đã xong,
+   và hiện sẵn khi quay lại room đã hoàn thành. Reset `R` làm cửa ẩn lại.
+
+Art hint hiện là placeholder vẽ bằng code (`OnboardingArt`). Thay bằng art thật: đặt sprite tên
+`KeyWASD`, `KeyJ`, `ThoughtBubble`, `Smoke` vào `Assets/Resources/Onboarding/`.
+
+File liên quan: `Assets/Scripts/Onboarding/*.cs`, `Assets/Scripts/Levels/DoorExit.cs`,
+`Assets/Scripts/Levels/LevelExitController.cs`.
+
+## 15d. Âm thanh
+
+`SoundManager` (`Assets/Scripts/Audio`) tự tạo khi game chạy, sống qua các scene
+(`DontDestroyOnLoad`). Gọi `SoundManager.Play(Sfx.X, pitch, volume, delay)`.
+
+- SFX mặc định được tổng hợp bằng code (`ProceduralSfx`, kiểu 8-bit). Thay bằng file thật:
+  đặt clip tên trùng enum `Sfx` vào `Assets/Resources/Audio/Sfx/` (ví dụ `Eat.wav`).
+- Nhạc nền: đặt clip `Assets/Resources/Audio/Music` (loop). Chưa có thì không phát nhạc.
+- Âm lượng: `SoundManager.SfxVolume`/`MusicVolume`, lưu bằng PlayerPrefs; chưa có UI chỉnh.
+- Mix từng âm (volume, pitch jitter, khoảng cách tối thiểu giữa 2 lần phát) nằm trong bảng `mix`.
+- Điểm phát: bước đi/đâm tường (`GridMover`), lấy food (`PlayerInventory`), cho ăn/phồng/đẩy/không
+  ăn được (`PlayerInteractor`), ợ (`PetBody`, `DoorExit`, `GridWorld`), cửa hiện (`DoorExit.Reveal`),
+  qua cửa (`LevelExitController`), hoàn thành phòng (`RoomCompletionAnimation`), reset R.
 
 ## 16. Checklist kiểm tra trước khi bàn giao
 
