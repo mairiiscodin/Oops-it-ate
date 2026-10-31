@@ -44,7 +44,7 @@ MonoBehaviour:
     roomB: 7
   - roomA: 7
     roomB: 8-1
-  revealAllRooms: 0
+  revealAllRooms: 1
   roomSize: 28
   roomSpacing: 14
   linkThickness: 6

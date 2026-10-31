@@ -77,6 +77,7 @@ namespace OopsItAte.Interaction
             }
 
             if (inventory.HasFood
+                && !IsHiddenDoorAt(targetPosition)
                 && player.World.TryPushBorder(targetPosition, player.FacingDirection))
             {
                 inventory.TryUseFood();
@@ -122,6 +123,21 @@ namespace OopsItAte.Interaction
                 if (doors[i].Contains(targetPosition))
                 {
                     return doors[i].FeedAndGrow();
+                }
+            }
+
+            return false;
+        }
+
+        // A hidden door looks like border but must not eat, so it cannot be pushed either.
+        private static bool IsHiddenDoorAt(GridPosition targetPosition)
+        {
+            DoorExit[] doors = FindObjectsByType<DoorExit>();
+            for (int i = 0; i < doors.Length; i++)
+            {
+                if (doors[i].IsHidden && doors[i].Contains(targetPosition))
+                {
+                    return true;
                 }
             }
 

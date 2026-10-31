@@ -4,6 +4,7 @@ using OopsItAte.Actors;
 using OopsItAte.Audio;
 using OopsItAte.Levels;
 using UnityEngine;
+using UnityEngine.Rendering.Universal;
 
 namespace OopsItAte.Grid
 {
@@ -22,9 +23,8 @@ namespace OopsItAte.Grid
         private readonly List<VoidPushLayer> voidPushLayers = new List<VoidPushLayer>();
         private Coroutine voidBurpCoroutine;
         private Camera fittedCamera;
-        private float fittedCameraAspect = -1f;
-        private int fittedPixelWidth;
-        private int fittedPixelHeight;
+        private int fittedScreenWidth;
+        private int fittedScreenHeight;
 
         private sealed class VoidPushLayer
         {
@@ -90,10 +90,10 @@ namespace OopsItAte.Grid
                 return;
             }
 
+            Vector2Int screenSize = GetScreenSize(camera);
             if (camera != fittedCamera
-                || !Mathf.Approximately(camera.aspect, fittedCameraAspect)
-                || camera.pixelWidth != fittedPixelWidth
-                || camera.pixelHeight != fittedPixelHeight)
+                || screenSize.x != fittedScreenWidth
+                || screenSize.y != fittedScreenHeight)
             {
                 FitCameraToLoadedBounds();
             }
@@ -194,16 +194,26 @@ namespace OopsItAte.Grid
             List<GridPosition> addedCornerCells = FindAddedCornerCells(
                 borderLine,
                 outwardDirection);
+            var pushedBoxes = new List<PushableBox>();
+            var pushedBodies = new List<PetBody>();
             if (!CanShiftBorderLine(
-                borderLine,
-                addedCornerCells,
-                outwardDirection,
-                movedDoors))
+                    borderLine,
+                    addedCornerCells,
+                    outwardDirection,
+                    movedDoors)
+                || !TryPlanOccupantPushes(
+                    borderLine,
+                    addedCornerCells,
+                    outwardDirection,
+                    pushedBoxes,
+                    pushedBodies))
             {
                 Debug.LogWarning(
                     $"Cannot push border at {borderPosition}: something blocks the row in front of it.");
                 return false;
             }
+
+            ApplyOccupantPushes(pushedBoxes, pushedBodies, outwardDirection);
 
             var emptiedCells = new List<GridPosition>();
             for (int i = 0; i < borderLine.Count; i++)
@@ -284,9 +294,10 @@ namespace OopsItAte.Grid
             GridPosition tangent,
             GridPosition outwardDirection)
         {
+            // The line follows the border for as long as there is floor behind it, so an
+            // edge that was already widened by an earlier push is still pushed in full.
             GridPosition candidate = origin + tangent;
-            while (IsInsideTransverseBounds(candidate, outwardDirection)
-                && IsPushableBorderCell(candidate, outwardDirection))
+            while (IsPushableBorderCell(candidate, outwardDirection))
             {
                 result.Add(candidate);
                 candidate += tangent;
@@ -302,15 +313,6 @@ namespace OopsItAte.Grid
                 && cellMap.IsLoaded(interior);
         }
 
-        private bool IsInsideTransverseBounds(
-            GridPosition position,
-            GridPosition outwardDirection)
-        {
-            return outwardDirection.X != 0
-                ? position.Y >= cellMap.MinY && position.Y <= cellMap.MaxY
-                : position.X >= cellMap.MinX && position.X <= cellMap.MaxX;
-        }
-
         private bool CanShiftBorderLine(
             IReadOnlyList<GridPosition> borderLine,
             IReadOnlyList<GridPosition> addedCornerCells,
@@ -319,12 +321,7 @@ namespace OopsItAte.Grid
         {
             for (int i = 0; i < borderLine.Count; i++)
             {
-                GridPosition destination = borderLine[i] + outwardDirection;
-                if (cellMap.IsAuthoredWall(destination)
-                    || cellMap.IsBorder(destination)
-                    || cellMap.IsDynamicBlocker(destination)
-                    || destination.Equals(playerPosition)
-                    || HasUnmovedDoorAt(destination, movedDoors))
+                if (IsBorderDestinationBlocked(borderLine[i] + outwardDirection, movedDoors))
                 {
                     return false;
                 }
@@ -341,15 +338,151 @@ namespace OopsItAte.Grid
             return true;
         }
 
+        // Boxes and bodies standing where the border will land are checked separately by
+        // TryPlanOccupantPushes, because they may be pushed out of the way.
         private bool IsBorderDestinationBlocked(
             GridPosition destination,
             IReadOnlyList<DoorExit> movedDoors)
         {
             return cellMap.IsAuthoredWall(destination)
                 || cellMap.IsBorder(destination)
-                || cellMap.IsDynamicBlocker(destination)
                 || destination.Equals(playerPosition)
                 || HasUnmovedDoorAt(destination, movedDoors);
+        }
+
+        // Every box/body on a cell the border moves into is pushed one cell outward, and
+        // anything in front of it is pushed along the same way. One stuck object blocks
+        // the whole push.
+        private bool TryPlanOccupantPushes(
+            IReadOnlyList<GridPosition> borderLine,
+            IReadOnlyList<GridPosition> addedCornerCells,
+            GridPosition outwardDirection,
+            List<PushableBox> pushedBoxes,
+            List<PetBody> pushedBodies)
+        {
+            var pending = new Queue<GridPosition>();
+            for (int i = 0; i < borderLine.Count; i++)
+            {
+                pending.Enqueue(borderLine[i] + outwardDirection);
+            }
+
+            for (int i = 0; i < addedCornerCells.Count; i++)
+            {
+                pending.Enqueue(addedCornerCells[i]);
+            }
+
+            PushableBox[] boxes = FindObjectsByType<PushableBox>();
+            PetBody[] bodies = FindObjectsByType<PetBody>();
+            var claimedCells = new HashSet<GridPosition>();
+            var occupantCells = new List<GridPosition>();
+            while (pending.Count > 0)
+            {
+                GridPosition cell = pending.Dequeue();
+                if (claimedCells.Contains(cell) || !cellMap.IsDynamicBlocker(cell))
+                {
+                    continue;
+                }
+
+                occupantCells.Clear();
+                if (!TryClaimOccupantAt(cell, boxes, bodies, pushedBoxes, pushedBodies, occupantCells))
+                {
+                    return false;
+                }
+
+                claimedCells.UnionWith(occupantCells);
+                for (int i = 0; i < occupantCells.Count; i++)
+                {
+                    GridPosition target = occupantCells[i] + outwardDirection;
+                    if (claimedCells.Contains(target))
+                    {
+                        continue;
+                    }
+
+                    if (!cellMap.IsLoaded(target)
+                        || cellMap.IsAuthoredWall(target)
+                        || cellMap.IsBorder(target)
+                        || target.Equals(playerPosition))
+                    {
+                        return false;
+                    }
+
+                    if (cellMap.IsDynamicBlocker(target))
+                    {
+                        pending.Enqueue(target);
+                    }
+                }
+            }
+
+            return true;
+        }
+
+        private static bool TryClaimOccupantAt(
+            GridPosition cell,
+            PushableBox[] boxes,
+            PetBody[] bodies,
+            List<PushableBox> pushedBoxes,
+            List<PetBody> pushedBodies,
+            List<GridPosition> occupantCells)
+        {
+            for (int i = 0; i < boxes.Length; i++)
+            {
+                if (boxes[i].IsPushable && boxes[i].Position.Equals(cell))
+                {
+                    pushedBoxes.Add(boxes[i]);
+                    occupantCells.Add(cell);
+                    return true;
+                }
+            }
+
+            for (int i = 0; i < bodies.Length; i++)
+            {
+                if (bodies[i].Contains(cell))
+                {
+                    if (!bodies[i].CanBePushedByBodyGrowth)
+                    {
+                        return false;
+                    }
+
+                    pushedBodies.Add(bodies[i]);
+                    occupantCells.AddRange(bodies[i].Cells);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static void ApplyOccupantPushes(
+            IReadOnlyList<PushableBox> pushedBoxes,
+            IReadOnlyList<PetBody> pushedBodies,
+            GridPosition outwardDirection)
+        {
+            // Lift every blocker first so objects in a chain cannot erase each other's
+            // blocker while they move; bodies re-add theirs at the end.
+            for (int i = 0; i < pushedBoxes.Count; i++)
+            {
+                pushedBoxes[i].SuspendBlocker();
+            }
+
+            for (int i = 0; i < pushedBodies.Count; i++)
+            {
+                pushedBodies[i].SuspendBlockers();
+            }
+
+            for (int i = 0; i < pushedBodies.Count; i++)
+            {
+                pushedBodies[i].ShiftUnchecked(outwardDirection);
+            }
+
+            for (int i = 0; i < pushedBoxes.Count; i++)
+            {
+                pushedBoxes[i].SetPositionUnchecked(pushedBoxes[i].Position + outwardDirection);
+            }
+
+            for (int i = 0; i < pushedBodies.Count; i++)
+            {
+                pushedBodies[i].RestoreBlockers();
+            }
         }
 
         private List<GridPosition> FindAddedCornerCells(
@@ -384,10 +517,14 @@ namespace OopsItAte.Grid
             }
 
             GridPosition existingCorner = extreme + tangent;
+            GridPosition cornerDestination = existingCorner + outwardDirection;
+            // A corner that already meets another border (e.g. an inner '_' wall touching
+            // the outer edge) is closed as it is and needs no extra cell.
             if (cellMap.IsBorder(existingCorner)
-                && !IsPushableBorderCell(existingCorner, outwardDirection))
+                && !IsPushableBorderCell(existingCorner, outwardDirection)
+                && !cellMap.IsBorder(cornerDestination))
             {
-                result.Add(existingCorner + outwardDirection);
+                result.Add(cornerDestination);
             }
         }
 
@@ -731,7 +868,8 @@ namespace OopsItAte.Grid
             float padding = CameraPaddingInCells * cellSize;
             float paddedWidth = contentWidth + padding * 2f;
             float paddedHeight = contentHeight + padding * 2f;
-            float safeAspect = Mathf.Max(camera.aspect, 0.01f);
+            Vector2Int screenSize = GetScreenSize(camera);
+            float safeAspect = Mathf.Max((float)screenSize.x / Mathf.Max(1, screenSize.y), 0.01f);
 
             float fittedSize = Mathf.Max(
                 paddedHeight * 0.5f,
@@ -739,67 +877,76 @@ namespace OopsItAte.Grid
 
             camera.orthographic = true;
             camera.orthographicSize = fittedSize;
-            float screenPixelsPerCell = GetPixelPerfectPixelsPerCell(camera, fittedSize);
-            if (screenPixelsPerCell > 0f)
+
+            // A fractional zoom (e.g. after a border push) draws each 32px tile on a
+            // non-integer number of screen pixels, which shows up as seams/stripes
+            // between tiles. Instead the room is rendered at 1:1 art pixels into a small
+            // texture (no seams) and the Pixel Perfect Camera stretches that texture to
+            // fill the screen, so the room always fits the window.
+            int artPixelsPerUnit = GetArtPixelsPerUnit();
+            PixelPerfectCamera pixelPerfect = camera.GetComponent<PixelPerfectCamera>();
+            if (artPixelsPerUnit > 0)
             {
-                // A fractional zoom (e.g. after a border push) draws each 32px tile on a
-                // non-integer number of screen pixels, which shows up as seams/stripes
-                // between tiles. Zoom out to the nearest whole-pixel scale instead.
-                float pixelsPerUnit = screenPixelsPerCell / cellSize;
-                camera.orthographicSize = camera.pixelHeight / (2f * pixelsPerUnit);
-                camera.transform.position = SnapCameraToPixelGrid(
-                    camera,
-                    min - new Vector3(cellSize, cellSize, 0f) * 0.5f,
-                    1f / pixelsPerUnit);
+                if (pixelPerfect == null)
+                {
+                    pixelPerfect = camera.gameObject.AddComponent<PixelPerfectCamera>();
+                }
+
+                // Even sizes keep the texture edges on the art pixel grid once the
+                // camera centre is snapped to it.
+                int referenceHeight = MakeEven(Mathf.CeilToInt(fittedSize * 2f * artPixelsPerUnit));
+                int referenceWidth = MakeEven(Mathf.RoundToInt(referenceHeight * safeAspect));
+                pixelPerfect.assetsPPU = artPixelsPerUnit;
+                pixelPerfect.refResolutionX = referenceWidth;
+                pixelPerfect.refResolutionY = referenceHeight;
+                pixelPerfect.gridSnapping = PixelPerfectCamera.GridSnapping.UpscaleRenderTexture;
+                pixelPerfect.cropFrame = PixelPerfectCamera.CropFrame.StretchFill;
+                pixelPerfect.enabled = true;
+
+                // The Pixel Perfect Camera applies the same size before rendering; set it
+                // now too so code reading orthographicSize this frame sees the real value.
+                camera.orthographicSize = referenceHeight * 0.5f / artPixelsPerUnit;
+            }
+            else if (pixelPerfect != null)
+            {
+                pixelPerfect.enabled = false;
             }
 
             fittedCamera = camera;
-            fittedCameraAspect = camera.aspect;
-            fittedPixelWidth = camera.pixelWidth;
-            fittedPixelHeight = camera.pixelHeight;
+            fittedScreenWidth = screenSize.x;
+            fittedScreenHeight = screenSize.y;
+        }
+
+        // Screen size rather than camera.pixelRect: the Pixel Perfect Camera shrinks the
+        // camera rect to its letterboxed area, which would otherwise trigger a refit.
+        private static Vector2Int GetScreenSize(Camera camera)
+        {
+            RenderTexture target = camera.targetTexture;
+            return target != null
+                ? new Vector2Int(target.width, target.height)
+                : new Vector2Int(Screen.width, Screen.height);
         }
 
         /// <summary>
-        /// Largest whole number of screen pixels per cell that still fits the content.
-        /// Prefers an integer multiple of the tile's texel size so every texel is the
-        /// same size on screen. Returns 0 when pixel snapping is not possible.
+        /// Art pixels per world unit, taken from the floor tile drawn over one cell.
+        /// Returns 0 when there is no whole-number value to render pixel-perfectly at.
         /// </summary>
-        private float GetPixelPerfectPixelsPerCell(Camera camera, float fittedSize)
+        private int GetArtPixelsPerUnit()
         {
-            if (camera.pixelHeight <= 0 || fittedSize <= 0f)
-            {
-                return 0f;
-            }
-
-            float fittedPixelsPerCell = camera.pixelHeight / (2f * fittedSize) * settings.cellSize;
             Sprite referenceTile = tileTheme != null ? tileTheme.floor : null;
-            float texelsPerCell = referenceTile != null ? referenceTile.rect.height : 0f;
-            if (texelsPerCell >= 1f)
+            if (referenceTile == null || settings.cellSize <= 0f)
             {
-                float scale = Mathf.Floor(fittedPixelsPerCell / texelsPerCell);
-                if (scale >= 1f)
-                {
-                    return scale * texelsPerCell;
-                }
+                return 0;
             }
 
-            // Window too small for 1:1 texels: at least keep tile edges on whole pixels.
-            float wholePixels = Mathf.Floor(fittedPixelsPerCell);
-            return wholePixels >= 1f ? wholePixels : 0f;
+            float pixelsPerUnit = referenceTile.rect.height / settings.cellSize;
+            int rounded = Mathf.RoundToInt(pixelsPerUnit);
+            return rounded >= 1 && Mathf.Abs(pixelsPerUnit - rounded) < 0.001f ? rounded : 0;
         }
 
-        /// <summary>Moves the camera so tile edges land exactly on screen pixel boundaries.</summary>
-        private static Vector3 SnapCameraToPixelGrid(Camera camera, Vector3 tileEdge, float unitsPerPixel)
+        private static int MakeEven(int value)
         {
-            Vector3 position = camera.transform.position;
-            float halfWidth = camera.pixelWidth * 0.5f * unitsPerPixel;
-            float halfHeight = camera.pixelHeight * 0.5f * unitsPerPixel;
-
-            float left = position.x - halfWidth;
-            float bottom = position.y - halfHeight;
-            left = tileEdge.x + Mathf.Round((left - tileEdge.x) / unitsPerPixel) * unitsPerPixel;
-            bottom = tileEdge.y + Mathf.Round((bottom - tileEdge.y) / unitsPerPixel) * unitsPerPixel;
-            return new Vector3(left + halfWidth, bottom + halfHeight, position.z);
+            return value + (value & 1);
         }
     }
 }
