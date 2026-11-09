@@ -92,14 +92,18 @@ namespace OopsItAte.Levels
             completionAnimation = gameObject.AddComponent<RoomCompletionAnimation>();
             completionAnimation.Initialize(pets, settings.RoomId);
             completionAnimation.Finished += exitController.RevealHiddenDoors;
+            var prompts = gameObject.AddComponent<InteractionPrompts>();
+            prompts.Initialize(player, inventory, interactor, kitchens, pets);
+            prompts.FeedPetsOnly = settings.playOnboarding;
             if (settings.playOnboarding)
             {
                 gameObject.AddComponent<OnboardingController>()
-                    .Initialize(player, inventory, kitchens, pets);
+                    .Initialize(player, inventory, input, prompts, kitchens, pets);
             }
 
             miniMap = gameObject.AddComponent<MiniMapHud>();
             miniMap.Initialize();
+            gameObject.AddComponent<SettingsHud>().Initialize();
             SetupCamera();
         }
 

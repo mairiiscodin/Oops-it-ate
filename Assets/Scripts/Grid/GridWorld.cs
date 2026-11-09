@@ -138,6 +138,11 @@ namespace OopsItAte.Grid
             return cellMap.IsTerrainBlocked(position);
         }
 
+        public bool IsBorder(GridPosition position)
+        {
+            return cellMap.IsBorder(position);
+        }
+
         private bool HasBodyAt(GridPosition position)
         {
             PetBody[] bodies = FindObjectsByType<PetBody>();

@@ -28,6 +28,12 @@ namespace OopsItAte.Input
 
         private void Update()
         {
+            if (SettingsHud.IsOpen)
+            {
+                queuedDirection = null;
+                return;
+            }
+
             if (UnityEngine.Input.GetKeyDown(KeyCode.R))
             {
                 ResetCurrentRoom();

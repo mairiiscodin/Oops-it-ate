@@ -352,8 +352,11 @@ File liên quan:
 
 ## 15b. Mini map tiến trình
 
-Mỗi gameplay level tạo `MiniMapHud` (Canvas overlay góc trên phải, sorting order 100,
-nằm dưới iris transition). Sơ đồ phòng đọc từ `Assets/Resources/MiniMapLayout.asset`.
+Mỗi gameplay level tạo `MiniMapHud` (Canvas overlay góc trên trái, sorting order 100,
+nằm dưới iris transition). Góc trên phải là nút bánh răng `SettingsHud` (sorting 110): bấm hoặc
+Esc mở bảng SOUND có slider MUSIC/SFX (`SoundManager.MusicVolume`/`SfxVolume`, lưu PlayerPrefs);
+khi bảng mở thì `KeyboardGridInput` bỏ qua phím. Level scene không có EventSystem nên
+`SettingsHud` tự tạo nếu thiếu. Sơ đồ phòng đọc từ `Assets/Resources/MiniMapLayout.asset`.
 
 - Tạo/cập nhật layout: `Tools/Oops It Ate/Generate Mini Map Layout`. Tool mở từng scene
   gameplay trong Build Settings, đọc các `DoorExit` và đặt phòng đích theo phía cửa nằm
@@ -376,15 +379,23 @@ File liên quan:
 Bật bằng `LevelSceneSettings.playOnboarding` (hiện chỉ bật ở scene `1`).
 `SceneLevelBuilder` thêm `OnboardingController`:
 
-1. Icon WASD trên đầu player cho tới khi đi được 2 ô.
-2. Oven bốc khói cho tới lần đầu lấy food; icon J hiện khi đứng sát, quay mặt vào oven và chưa cầm food.
-3. Pet chưa ăn có bong bóng suy nghĩ món ăn (sau bước 1); icon J hiện khi cầm food và quay mặt vào Pet.
-4. Cửa có `DoorExit.hiddenUntilRoomComplete` trông như border/tường, không đi qua và không cho ăn được.
+0. Sau khi iris mở xong: camera zoom vào Pet, bong bóng suy nghĩ (bánh mì) bật lên, rồi zoom ra.
+   Input bị khoá trong lúc zoom.
+1. Phím WASD hiện ở cạnh trái màn hình (`WasdKeysHud`, canvas UI), tự bấm lần lượt W-A-S-D và
+   sáng lên khi người chơi bấm phím thật.
+2. Đi được 3 ô thì WASD biến mất.
+3. Camera zoom vào oven, oven bắt đầu bốc khói (tới lần đầu lấy food).
+4. "J TAKE FOOD" hiện khi đứng sát, quay mặt vào oven và chưa cầm food; "J FEED" khi cầm food và
+   quay mặt vào thứ cho ăn được (Pet, oven/thùng đã lớn, cửa đang hiện, border — xem
+   `PlayerInteractor.HasFeedTargetAhead`; riêng phòng 1 chỉ Pet). Hai prompt J này do `InteractionPrompts` vẽ và có ở **mọi màn**
+   (`SceneLevelBuilder` luôn thêm); ở phòng 1 tutorial chỉ giữ "TAKE FOOD" lại tới khi giới thiệu oven.
+   Hai cảnh zoom chỉ chạy lần đầu vào scene trong một lần chơi; vào lại thì hint hiện luôn.
+5. Cửa có `DoorExit.hiddenUntilRoomComplete` trông như border/tường, không đi qua và không cho ăn được.
    Cửa chỉ hiện (pop + rung) khi `RoomCompletionAnimation.Finished` báo animation "Oops I Ate" đã xong,
    và hiện sẵn khi quay lại room đã hoàn thành. Reset `R` làm cửa ẩn lại.
 
 Art hint hiện là placeholder vẽ bằng code (`OnboardingArt`). Thay bằng art thật: đặt sprite tên
-`KeyWASD`, `KeyJ`, `ThoughtBubble`, `Smoke` vào `Assets/Resources/Onboarding/`.
+`KeyW`/`KeyWDown` (tương tự A, S, D), `KeyJTakeFood`, `KeyJFeed`, `ThoughtBubble`, `Smoke` vào `Assets/Resources/Onboarding/`.
 
 File liên quan: `Assets/Scripts/Onboarding/*.cs`, `Assets/Scripts/Levels/DoorExit.cs`,
 `Assets/Scripts/Levels/LevelExitController.cs`.

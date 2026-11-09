@@ -27,6 +27,9 @@ namespace OopsItAte.Levels
         private Material irisMaterial;
         private bool isTransitioning;
 
+        /// <summary>True while the iris is closing or opening (the overlay destroys itself when done).</summary>
+        public static bool IsPlaying => instance != null;
+
         public static void LoadRoom(string sceneName)
         {
             EnsureInstance();

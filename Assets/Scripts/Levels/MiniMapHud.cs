@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace OopsItAte.Levels
 {
     /// <summary>
-    /// Soul Knight style room map in the top-right corner. Visited rooms are dim,
+    /// Soul Knight style room map in the top-left corner. Visited rooms are dim,
     /// rooms whose Pets have all been fed light up, and the current room is framed.
     /// </summary>
     public sealed class MiniMapHud : MonoBehaviour
@@ -87,10 +87,10 @@ namespace OopsItAte.Levels
             scaler.matchWidthOrHeight = 0.5f;
 
             panel = CreateImage("Panel", canvasObject.transform, layout.panelColor).rectTransform;
-            panel.anchorMin = Vector2.one;
-            panel.anchorMax = Vector2.one;
-            panel.pivot = Vector2.one;
-            panel.anchoredPosition = -layout.screenMargin;
+            panel.anchorMin = Vector2.up;
+            panel.anchorMax = Vector2.up;
+            panel.pivot = Vector2.up;
+            panel.anchoredPosition = new Vector2(layout.screenMargin.x, -layout.screenMargin.y);
         }
 
         private void Redraw()

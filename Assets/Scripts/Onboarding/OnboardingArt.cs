@@ -5,7 +5,8 @@ namespace OopsItAte.Onboarding
 {
     /// <summary>
     /// Sprites for onboarding hints. Drop real art into Resources/Onboarding
-    /// (KeyWASD, KeyJ, ThoughtBubble, Smoke) to replace the generated placeholders.
+    /// (KeyW, KeyWDown, ..., KeyJTakeFood, KeyJFeed, ThoughtBubble, Smoke) to replace
+    /// the generated placeholders.
     /// </summary>
     public static class OnboardingArt
     {
@@ -15,10 +16,12 @@ namespace OopsItAte.Onboarding
         private static readonly Color32 Outline = new Color32(34, 32, 52, 255);
         private static readonly Color32 KeyFace = new Color32(244, 244, 236, 255);
         private static readonly Color32 KeyShade = new Color32(168, 168, 184, 255);
+        private static readonly Color32 KeyPressedFace = new Color32(255, 222, 116, 255);
+        private static readonly Color32 KeyPressedShade = new Color32(214, 164, 72, 255);
         private static readonly Color32 BubbleFill = new Color32(255, 255, 255, 255);
-        private static readonly Color32 Meat = new Color32(214, 118, 52, 255);
-        private static readonly Color32 MeatDark = new Color32(150, 72, 36, 255);
-        private static readonly Color32 Bone = new Color32(250, 240, 214, 255);
+        private static readonly Color32 Crust = new Color32(214, 140, 62, 255);
+        private static readonly Color32 CrustDark = new Color32(146, 86, 38, 255);
+        private static readonly Color32 Crumb = new Color32(250, 220, 150, 255);
         private static readonly Color32 SmokeFill = new Color32(226, 226, 232, 255);
         private static readonly Color32 SmokeEdge = new Color32(176, 176, 190, 255);
 
@@ -29,17 +32,35 @@ namespace OopsItAte.Onboarding
             ['S'] = new[] { ".XXXX", "X....", ".XXX.", "....X", "XXXX." },
             ['D'] = new[] { "XXXX.", "X...X", "X...X", "X...X", "XXXX." },
             ['J'] = new[] { "..XXX", "...X.", "...X.", "X..X.", ".XX.." },
+            ['T'] = new[] { "XXXXX", "..X..", "..X..", "..X..", "..X.." },
+            ['K'] = new[] { "X..X.", "X.X..", "XX...", "X.X..", "X..X." },
+            ['E'] = new[] { "XXXXX", "X....", "XXXX.", "X....", "XXXXX" },
+            ['F'] = new[] { "XXXXX", "X....", "XXXX.", "X....", "X...." },
+            ['O'] = new[] { ".XXX.", "X...X", "X...X", "X...X", ".XXX." },
         };
 
         private const int KeyWidth = 11;
         private const int KeyHeight = 12;
+        private const int GlyphWidth = 5;
+        private const int SpaceWidth = 3;
 
         private static readonly Dictionary<string, Sprite> cache = new Dictionary<string, Sprite>();
 
-        public static Sprite KeyWasd => Get("KeyWASD", BuildWasd);
-        public static Sprite KeyJ => Get("KeyJ", () => BuildSingleKey('J'));
+        public static Sprite KeyJTakeFood => Get("KeyJTakeFood", () => BuildKeyWithLabel('J', "TAKE FOOD"));
+        public static Sprite KeyJFeed => Get("KeyJFeed", () => BuildKeyWithLabel('J', "FEED"));
         public static Sprite ThoughtBubble => Get("ThoughtBubble", BuildThoughtBubble);
         public static Sprite Smoke => Get("Smoke", BuildSmoke);
+
+        /// <summary>A single keycap; pressed keys sit one pixel lower and light up.</summary>
+        public static Sprite Key(char letter, bool pressed)
+        {
+            return Get(pressed ? $"Key{letter}Down" : $"Key{letter}", () =>
+            {
+                var canvas = new PixelCanvas(KeyWidth, KeyHeight);
+                DrawKey(canvas, 0, 0, letter, pressed);
+                return canvas.ToSprite();
+            });
+        }
 
         private static Sprite Get(string name, System.Func<Sprite> build)
         {
@@ -59,43 +80,88 @@ namespace OopsItAte.Onboarding
             return sprite;
         }
 
-        private static Sprite BuildSingleKey(char letter)
+        /// <summary>Keycap followed by a dark label plate, e.g. [J] TAKE FOOD.</summary>
+        private static Sprite BuildKeyWithLabel(char letter, string label)
         {
-            var canvas = new PixelCanvas(KeyWidth, KeyHeight);
-            DrawKey(canvas, 0, 0, letter);
-            return canvas.ToSprite();
-        }
+            const int gap = 2;
+            const int padding = 2;
+            const int labelTop = 1;
+            const int labelHeight = 9;
+            int labelLeft = KeyWidth + gap;
+            int labelWidth = MeasureText(label) + padding * 2;
 
-        private static Sprite BuildWasd()
-        {
-            const int gap = 1;
-            var canvas = new PixelCanvas(KeyWidth * 3 + gap * 2, KeyHeight * 2 + gap);
-            DrawKey(canvas, KeyWidth + gap, 0, 'W');
-            DrawKey(canvas, 0, KeyHeight + gap, 'A');
-            DrawKey(canvas, KeyWidth + gap, KeyHeight + gap, 'S');
-            DrawKey(canvas, (KeyWidth + gap) * 2, KeyHeight + gap, 'D');
+            var canvas = new PixelCanvas(labelLeft + labelWidth, KeyHeight);
+            DrawKey(canvas, 0, 0, letter, false);
+            for (int y = 0; y < labelHeight; y++)
+            {
+                for (int x = 0; x < labelWidth; x++)
+                {
+                    bool corner = (x == 0 || x == labelWidth - 1) && (y == 0 || y == labelHeight - 1);
+                    if (!corner)
+                    {
+                        canvas.Set(labelLeft + x, labelTop + y, Outline);
+                    }
+                }
+            }
+
+            DrawText(canvas, labelLeft + padding, labelTop + 2, label, KeyFace);
             return canvas.ToSprite();
         }
 
         /// <summary>Draws one keycap with its top-left corner at (left, top).</summary>
-        private static void DrawKey(PixelCanvas canvas, int left, int top, char letter)
+        private static void DrawKey(PixelCanvas canvas, int left, int top, char letter, bool pressed)
         {
-            for (int y = 0; y < KeyHeight; y++)
+            int capTop = pressed ? 1 : 0;
+            int shadeRows = pressed ? 2 : 3;
+            Color32 face = pressed ? KeyPressedFace : KeyFace;
+            Color32 shade = pressed ? KeyPressedShade : KeyShade;
+            for (int y = capTop; y < KeyHeight; y++)
             {
                 for (int x = 0; x < KeyWidth; x++)
                 {
-                    bool corner = (x == 0 || x == KeyWidth - 1) && (y == 0 || y == KeyHeight - 1);
+                    bool corner = (x == 0 || x == KeyWidth - 1) && (y == capTop || y == KeyHeight - 1);
                     if (corner)
                     {
                         continue;
                     }
 
-                    bool edge = x == 0 || x == KeyWidth - 1 || y == 0 || y == KeyHeight - 1;
-                    Color32 color = edge ? Outline : y >= KeyHeight - 3 ? KeyShade : KeyFace;
+                    bool edge = x == 0 || x == KeyWidth - 1 || y == capTop || y == KeyHeight - 1;
+                    Color32 color = edge ? Outline : y >= KeyHeight - shadeRows ? shade : face;
                     canvas.Set(left + x, top + y, color);
                 }
             }
 
+            DrawGlyph(canvas, left + 3, top + 2 + capTop, letter, Outline);
+        }
+
+        private static int MeasureText(string text)
+        {
+            int width = 0;
+            for (int i = 0; i < text.Length; i++)
+            {
+                width += (text[i] == ' ' ? SpaceWidth : GlyphWidth) + 1;
+            }
+
+            return Mathf.Max(0, width - 1);
+        }
+
+        private static void DrawText(PixelCanvas canvas, int left, int top, string text, Color32 color)
+        {
+            for (int i = 0; i < text.Length; i++)
+            {
+                if (text[i] == ' ')
+                {
+                    left += SpaceWidth + 1;
+                    continue;
+                }
+
+                DrawGlyph(canvas, left, top, text[i], color);
+                left += GlyphWidth + 1;
+            }
+        }
+
+        private static void DrawGlyph(PixelCanvas canvas, int left, int top, char letter, Color32 color)
+        {
             string[] glyph = Glyphs[letter];
             for (int y = 0; y < glyph.Length; y++)
             {
@@ -103,7 +169,7 @@ namespace OopsItAte.Onboarding
                 {
                     if (glyph[y][x] == 'X')
                     {
-                        canvas.Set(left + 3 + x, top + 2 + y, Outline);
+                        canvas.Set(left + x, top + y, color);
                     }
                 }
             }
@@ -138,28 +204,28 @@ namespace OopsItAte.Onboarding
                 }
             }
 
-            string[] drumstick =
+            // A loaf of bread with two scored cuts, centred in the cloud.
+            string[] bread =
             {
-                "...mMMm.",
-                "..MMMMMM",
-                "..MMMMMm",
-                "..bMMMm.",
-                ".b..mm..",
-                "bb......",
-                ".b......",
+                "..dddddd..",
+                ".dCCCCCCd.",
+                "dCCcCCcCCd",
+                "dCcCCcCCCd",
+                "dCCCCCCCCd",
+                ".dddddddd.",
             };
-            for (int y = 0; y < drumstick.Length; y++)
+            for (int y = 0; y < bread.Length; y++)
             {
-                for (int x = 0; x < drumstick[y].Length; x++)
+                for (int x = 0; x < bread[y].Length; x++)
                 {
-                    char pixel = drumstick[y][x];
+                    char pixel = bread[y][x];
                     if (pixel == '.')
                     {
                         continue;
                     }
 
-                    Color32 color = pixel == 'M' ? Meat : pixel == 'm' ? MeatDark : Bone;
-                    canvas.Set(8 + x, 3 + y, color);
+                    Color32 color = pixel == 'C' ? Crust : pixel == 'd' ? CrustDark : Crumb;
+                    canvas.Set(7 + x, 4 + y, color);
                 }
             }
 

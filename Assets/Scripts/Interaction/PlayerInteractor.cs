@@ -94,6 +94,52 @@ namespace OopsItAte.Interaction
 
         }
 
+        /// <summary>
+        /// True when J (holding food) would try to feed what the player faces: a Pet, a grown
+        /// kitchen or box, a visible door or a border. Has no side effects; the feed itself can
+        /// still fail if there is no room to grow or push.
+        /// </summary>
+        public bool HasFeedTargetAhead()
+        {
+            GridPosition targetPosition = player.FacingPosition;
+            for (int i = 0; i < pets.Length; i++)
+            {
+                if (pets[i] != null && pets[i].Contains(targetPosition))
+                {
+                    return true;
+                }
+            }
+
+            KitchenStation kitchen = FindKitchenAt(targetPosition);
+            if (kitchen != null && kitchen.GrowableBody != null)
+            {
+                return true;
+            }
+
+            for (int i = 0; i < boxes.Length; i++)
+            {
+                PushableBox box = boxes[i];
+                if (box != null && box.IsInitialized
+                    && (box.GrowableBody != null
+                        ? box.GrowableBody.Contains(targetPosition)
+                        : targetPosition.Equals(box.Position)))
+                {
+                    return true;
+                }
+            }
+
+            DoorExit[] doors = FindObjectsByType<DoorExit>();
+            for (int i = 0; i < doors.Length; i++)
+            {
+                if (doors[i].Contains(targetPosition))
+                {
+                    return !doors[i].IsHidden;
+                }
+            }
+
+            return player.World != null && player.World.IsBorder(targetPosition);
+        }
+
         private KitchenStation FindKitchenAt(GridPosition targetPosition)
         {
             for (int i = 0; i < kitchens.Length; i++)
