@@ -886,35 +886,30 @@ namespace OopsItAte.Grid
             // A fractional zoom (e.g. after a border push) draws each 32px tile on a
             // non-integer number of screen pixels, which shows up as seams/stripes
             // between tiles. Instead the room is rendered at 1:1 art pixels into a small
-            // texture (no seams) and the Pixel Perfect Camera stretches that texture to
-            // fill the screen, so the room always fits the window.
+            // texture (no seams) and PixelArtUpscaler draws that texture over the whole
+            // screen with a sharp-upscale shader: it fills the window, stays crisp, and
+            // has none of the stripes plain point filtering gives at fractional scales.
             int artPixelsPerUnit = GetArtPixelsPerUnit();
             PixelPerfectCamera pixelPerfect = camera.GetComponent<PixelPerfectCamera>();
+            if (pixelPerfect != null)
+            {
+                pixelPerfect.enabled = false;
+            }
+
+            PixelArtUpscaler upscaler = camera.GetComponent<PixelArtUpscaler>();
             if (artPixelsPerUnit > 0)
             {
-                if (pixelPerfect == null)
-                {
-                    pixelPerfect = camera.gameObject.AddComponent<PixelPerfectCamera>();
-                }
-
                 // Even sizes keep the texture edges on the art pixel grid once the
                 // camera centre is snapped to it.
                 int referenceHeight = MakeEven(Mathf.CeilToInt(fittedSize * 2f * artPixelsPerUnit));
                 int referenceWidth = MakeEven(Mathf.RoundToInt(referenceHeight * safeAspect));
-                pixelPerfect.assetsPPU = artPixelsPerUnit;
-                pixelPerfect.refResolutionX = referenceWidth;
-                pixelPerfect.refResolutionY = referenceHeight;
-                pixelPerfect.gridSnapping = PixelPerfectCamera.GridSnapping.UpscaleRenderTexture;
-                pixelPerfect.cropFrame = PixelPerfectCamera.CropFrame.StretchFill;
-                pixelPerfect.enabled = true;
-
-                // The Pixel Perfect Camera applies the same size before rendering; set it
-                // now too so code reading orthographicSize this frame sees the real value.
-                camera.orthographicSize = referenceHeight * 0.5f / artPixelsPerUnit;
+                upscaler = PixelArtUpscaler.GetOrAdd(camera);
+                upscaler.enabled = true;
+                upscaler.Configure(referenceWidth, referenceHeight, artPixelsPerUnit);
             }
-            else if (pixelPerfect != null)
+            else if (upscaler != null)
             {
-                pixelPerfect.enabled = false;
+                upscaler.enabled = false;
             }
 
             fittedCamera = camera;
@@ -922,14 +917,11 @@ namespace OopsItAte.Grid
             fittedScreenHeight = screenSize.y;
         }
 
-        // Screen size rather than camera.pixelRect: the Pixel Perfect Camera shrinks the
-        // camera rect to its letterboxed area, which would otherwise trigger a refit.
+        // Screen size rather than the camera's own size: the camera renders into the
+        // PixelArtUpscaler texture, whose size is derived from this.
         private static Vector2Int GetScreenSize(Camera camera)
         {
-            RenderTexture target = camera.targetTexture;
-            return target != null
-                ? new Vector2Int(target.width, target.height)
-                : new Vector2Int(Screen.width, Screen.height);
+            return new Vector2Int(Screen.width, Screen.height);
         }
 
         /// <summary>
@@ -952,6 +944,5 @@ namespace OopsItAte.Grid
         private static int MakeEven(int value)
         {
             return value + (value & 1);
-        }
-    }
+        }    }
 }

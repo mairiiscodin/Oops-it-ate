@@ -6,7 +6,6 @@ using OopsItAte.Input;
 using OopsItAte.Interaction;
 using OopsItAte.Levels;
 using UnityEngine;
-using UnityEngine.Rendering.Universal;
 
 namespace OopsItAte.Onboarding
 {
@@ -245,12 +244,12 @@ namespace OopsItAte.Onboarding
             }
 
             isFocusing = true;
-            PixelPerfectCamera pixelPerfect = camera.GetComponent<PixelPerfectCamera>();
-            bool usePixelPerfect = pixelPerfect != null && pixelPerfect.enabled && pixelPerfect.assetsPPU > 0;
+            PixelArtUpscaler upscaler = camera.GetComponent<PixelArtUpscaler>();
+            bool usePixelPerfect = upscaler != null && upscaler.enabled && upscaler.PixelsPerUnit > 0;
             Vector3 basePosition = camera.transform.position;
             float baseSize = camera.orthographicSize;
-            int baseRefX = usePixelPerfect ? pixelPerfect.refResolutionX : 0;
-            int baseRefY = usePixelPerfect ? pixelPerfect.refResolutionY : 0;
+            int baseRefX = usePixelPerfect ? upscaler.ReferenceWidth : 0;
+            int baseRefY = usePixelPerfect ? upscaler.ReferenceHeight : 0;
             Vector3 focus = GetCenter(target, target.transform.position) + offset;
             Vector3 focusPosition = new Vector3(focus.x, focus.y, basePosition.z);
 
@@ -261,11 +260,12 @@ namespace OopsItAte.Onboarding
                 float zoom = Mathf.Lerp(1f, FocusZoom, eased);
                 if (usePixelPerfect)
                 {
-                    // The Pixel Perfect Camera owns orthographicSize, so zoom through its
-                    // reference resolution (kept even, like GridWorld does).
-                    pixelPerfect.refResolutionX = MakeEven(Mathf.RoundToInt(baseRefX * zoom));
-                    pixelPerfect.refResolutionY = MakeEven(Mathf.RoundToInt(baseRefY * zoom));
-                    camera.orthographicSize = pixelPerfect.refResolutionY * 0.5f / pixelPerfect.assetsPPU;
+                    // Zoom by shrinking the 1:1 art-pixel texture (kept even, like
+                    // GridWorld does) so the zoomed view stays crisp and seam-free.
+                    upscaler.Configure(
+                        MakeEven(Mathf.RoundToInt(baseRefX * zoom)),
+                        MakeEven(Mathf.RoundToInt(baseRefY * zoom)),
+                        upscaler.PixelsPerUnit);
                 }
                 else
                 {
@@ -292,11 +292,12 @@ namespace OopsItAte.Onboarding
             camera.transform.position = basePosition;
             if (usePixelPerfect)
             {
-                pixelPerfect.refResolutionX = baseRefX;
-                pixelPerfect.refResolutionY = baseRefY;
+                upscaler.Configure(baseRefX, baseRefY, upscaler.PixelsPerUnit);
             }
-
-            camera.orthographicSize = baseSize;
+            else
+            {
+                camera.orthographicSize = baseSize;
+            }
             isFocusing = false;
         }
 

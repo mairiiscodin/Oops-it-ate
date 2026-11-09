@@ -394,13 +394,21 @@ namespace OopsItAte.Actors
                 : null;
             if (bigPetFaceVisual != null && frames != null && frames.Length > 0)
             {
-                SpriteRenderer faceRenderer = bigPetFaceVisual.GetComponent<SpriteRenderer>();
                 float frameDuration = 1f / Mathf.Max(1f, bigDogFaceFrameData.FramesPerSecond);
                 for (int frameIndex = 0;
                      frameIndex < frames.Length && bigPetFaceVisual != null;
                      frameIndex++)
                 {
-                    faceRenderer.sprite = frames[frameIndex];
+                    // Look the renderer up every frame: a redraw (e.g. the body being
+                    // pushed by a returning border wall) replaces the face object, and
+                    // writing to the destroyed renderer would kill this coroutine and
+                    // leave the pet stuck at its enlarged size.
+                    SpriteRenderer faceRenderer = bigPetFaceVisual.GetComponent<SpriteRenderer>();
+                    if (faceRenderer != null)
+                    {
+                        faceRenderer.sprite = frames[frameIndex];
+                    }
+
                     yield return new WaitForSeconds(frameDuration);
                 }
 
